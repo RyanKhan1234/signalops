@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 
 from anthropic import AsyncAnthropic
 
@@ -15,6 +16,22 @@ from src.config import settings
 from src.models.digest import DetectedIntent, DigestType
 
 logger = logging.getLogger(__name__)
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+
+def _extract_json_from_text(text: str) -> str:
+    """Strip markdown code fences from an LLM response to extract raw JSON.
+
+    Claude sometimes wraps JSON in ```json...``` or ```...``` fences even when
+    instructed not to. This strips those fences before attempting json.loads().
+    """
+    text = re.sub(r"```(?:json)?\s*\n?", "", text)
+    text = text.replace("```", "")
+    return text.strip()
+
 
 # ---------------------------------------------------------------------------
 # Prompt templates — kept in version-controlled code, not external storage
@@ -88,7 +105,7 @@ async def detect_intent(prompt: str) -> DetectedIntent:
     logger.debug("Raw intent response: %s", raw_text)
 
     try:
-        parsed = json.loads(raw_text)
+        parsed = json.loads(_extract_json_from_text(raw_text))
     except json.JSONDecodeError as exc:
         logger.error("Failed to parse intent JSON: %s — raw: %s", exc, raw_text)
         # Graceful fallback: treat as weekly_report with generic entity
@@ -166,8 +183,6 @@ def detect_intent_heuristic(prompt: str) -> DetectedIntent:
         time_range = "7d"
 
     # Simple entity extraction: capitalized words and quoted strings
-    import re
-
     entities: list[str] = []
     # Extract quoted phrases
     quoted = re.findall(r'"([^"]+)"', prompt)
