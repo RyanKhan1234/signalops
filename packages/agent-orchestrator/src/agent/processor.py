@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 
 from anthropic import AsyncAnthropic
 
@@ -27,6 +28,14 @@ from src.models.digest import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+def _extract_json(text: str) -> str:
+    """Strip markdown code fences before JSON parsing."""
+    text = re.sub(r"```(?:json)?\s*\n?", "", text)
+    text = text.replace("```", "")
+    return text.strip()
+
 
 # ---------------------------------------------------------------------------
 # Prompt templates
@@ -196,7 +205,7 @@ async def cluster_articles(articles: list[Article]) -> list[ArticleCluster]:
 
     message = await client.messages.create(
         model=settings.anthropic_model,
-        max_tokens=1024,
+        max_tokens=4096,
         messages=[{"role": "user", "content": prompt}],
     )
 
@@ -204,7 +213,7 @@ async def cluster_articles(articles: list[Article]) -> list[ArticleCluster]:
     logger.debug("Clustering response: %s", raw[:500])
 
     try:
-        parsed = json.loads(raw)
+        parsed = json.loads(_extract_json(raw))
         clusters_data = parsed.get("clusters", [])
     except (json.JSONDecodeError, KeyError) as exc:
         logger.warning("Failed to parse clustering response: %s — using single cluster", exc)
@@ -268,7 +277,7 @@ async def extract_signals(clusters: list[ArticleCluster]) -> list[KeySignal]:
                 messages=[{"role": "user", "content": prompt}],
             )
             raw = message.content[0].text.strip()
-            parsed = json.loads(raw)
+            parsed = json.loads(_extract_json(raw))
 
             best_idx = parsed.get("best_article_index", 0)
             if not isinstance(best_idx, int) or best_idx < 0 or best_idx >= len(cluster.articles):
@@ -340,7 +349,7 @@ async def identify_risks_and_opportunities(
             messages=[{"role": "user", "content": prompt}],
         )
         raw = message.content[0].text.strip()
-        parsed = json.loads(raw)
+        parsed = json.loads(_extract_json(raw))
     except (json.JSONDecodeError, Exception) as exc:
         logger.warning("Failed to identify risks/opportunities: %s", exc)
         return [], []
@@ -437,7 +446,7 @@ async def generate_action_items(
             messages=[{"role": "user", "content": prompt}],
         )
         raw = message.content[0].text.strip()
-        parsed = json.loads(raw)
+        parsed = json.loads(_extract_json(raw))
     except (json.JSONDecodeError, Exception) as exc:
         logger.warning("Failed to generate action items: %s", exc)
         return []
