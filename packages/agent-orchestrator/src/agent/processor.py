@@ -201,7 +201,7 @@ async def cluster_articles(articles: list[Article]) -> list[ArticleCluster]:
     ]
     articles_json = json.dumps(articles_data, indent=2)
 
-    prompt = CLUSTERING_PROMPT.format(articles_json=articles_json)
+    prompt = CLUSTERING_PROMPT.replace("{articles_json}", articles_json)
 
     message = await client.messages.create(
         model=settings.anthropic_model,
@@ -266,9 +266,7 @@ async def extract_signals(clusters: list[ArticleCluster]) -> list[KeySignal]:
             for i, a in enumerate(cluster.articles)
         ]
         articles_json = json.dumps(articles_data, indent=2)
-        prompt = SIGNAL_EXTRACTION_PROMPT.format(
-            theme=cluster.theme, articles_json=articles_json
-        )
+        prompt = SIGNAL_EXTRACTION_PROMPT.replace("{theme}", cluster.theme).replace("{articles_json}", articles_json)
 
         try:
             message = await client.messages.create(
@@ -340,7 +338,7 @@ async def identify_risks_and_opportunities(
         for i, s in enumerate(signals)
     ]
     signals_json = json.dumps(signals_data, indent=2)
-    prompt = RISK_OPPORTUNITY_PROMPT.format(signals_json=signals_json)
+    prompt = RISK_OPPORTUNITY_PROMPT.replace("{signals_json}", signals_json)
 
     try:
         message = await client.messages.create(
@@ -434,10 +432,7 @@ async def generate_action_items(
         {"index": i, "description": o.description, "confidence": o.confidence}
         for i, o in enumerate(opportunities)
     ]
-    prompt = ACTION_ITEM_PROMPT.format(
-        risks_json=json.dumps(risks_data, indent=2),
-        opportunities_json=json.dumps(opps_data, indent=2),
-    )
+    prompt = ACTION_ITEM_PROMPT.replace("{risks_json}", json.dumps(risks_data, indent=2)).replace("{opportunities_json}", json.dumps(opps_data, indent=2))
 
     try:
         message = await client.messages.create(
