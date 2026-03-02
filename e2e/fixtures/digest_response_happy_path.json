@@ -1,0 +1,83 @@
+{
+  "digest_type": "weekly_report",
+  "query": "Anything important about Walmart Connect this week?",
+  "generated_at": "2026-02-28T12:00:00Z",
+  "report_id": "rpt_e2e_happy_001",
+  "executive_summary": "Walmart Connect made significant moves this week, expanding its self-serve advertising platform and announcing new DSP API partnerships. These changes position Walmart Connect as a stronger competitor in the retail media space.",
+  "key_signals": [
+    {
+      "signal": "Walmart Connect reduced minimum self-serve spend threshold from $50K to $5K/month, targeting mid-market brands.",
+      "source_url": "https://www.adexchanger.com/retail-media/walmart-connect-self-serve-expansion-2026",
+      "source_title": "Walmart Connect Lowers Barrier to Entry with Self-Serve Expansion",
+      "published_date": "2026-02-27T09:00:00Z",
+      "relevance": "high"
+    },
+    {
+      "signal": "Walmart Connect signed API partnerships with three major DSPs for programmatic access to first-party shopper data.",
+      "source_url": "https://www.marketingweek.com/walmart-connect-dsp-api-partnerships",
+      "source_title": "Walmart Connect Opens API to Programmatic Buyers",
+      "published_date": "2026-02-25T14:30:00Z",
+      "relevance": "high"
+    }
+  ],
+  "risks": [
+    {
+      "description": "Walmart Connect's self-serve expansion directly threatens mid-market advertiser retention with the $5K-$50K/month spend tier.",
+      "severity": "high",
+      "source_urls": [
+        "https://www.adexchanger.com/retail-media/walmart-connect-self-serve-expansion-2026"
+      ]
+    }
+  ],
+  "opportunities": [
+    {
+      "description": "Walmart Connect's DSP API program creates a standard for retail media APIs — accelerating our own program could capture remaining DSP partnerships.",
+      "confidence": "medium",
+      "source_urls": [
+        "https://www.marketingweek.com/walmart-connect-dsp-api-partnerships"
+      ]
+    }
+  ],
+  "action_items": [
+    {
+      "action": "Conduct competitive pricing analysis against Walmart Connect's new self-serve tiers and propose pricing adjustments by EOW.",
+      "priority": "P0",
+      "rationale": "The $5K minimum directly undercuts our entry tier. Risk of mid-market churn is immediate."
+    },
+    {
+      "action": "Schedule DSP partnership review to accelerate our API program.",
+      "priority": "P1",
+      "rationale": "First-mover advantage with remaining DSPs before Walmart Connect locks them in."
+    }
+  ],
+  "sources": [
+    {
+      "url": "https://www.adexchanger.com/retail-media/walmart-connect-self-serve-expansion-2026",
+      "title": "Walmart Connect Lowers Barrier to Entry with Self-Serve Expansion",
+      "published_date": "2026-02-27T09:00:00Z",
+      "snippet": "Walmart Connect announced today that it is reducing the minimum monthly spend for its self-serve advertising platform from $50,000 to $5,000."
+    },
+    {
+      "url": "https://www.marketingweek.com/walmart-connect-dsp-api-partnerships",
+      "title": "Walmart Connect Opens API to Programmatic Buyers",
+      "published_date": "2026-02-25T14:30:00Z",
+      "snippet": "Three major demand-side platforms have signed API partnership agreements with Walmart Connect."
+    }
+  ],
+  "tool_trace": [
+    {
+      "tool_name": "search_company_news",
+      "input": {"company": "Walmart Connect", "time_range": "7d"},
+      "output_summary": "Returned 3 articles. Top result: self-serve expansion announcement.",
+      "latency_ms": 1240,
+      "timestamp": "2026-02-28T11:58:12Z"
+    },
+    {
+      "tool_name": "search_news",
+      "input": {"query": "Walmart Connect retail media advertising", "time_range": "7d", "num_results": 10},
+      "output_summary": "Returned 3 articles. Found DSP partnership announcement.",
+      "latency_ms": 987,
+      "timestamp": "2026-02-28T11:58:14Z"
+    }
+  ]
+}
