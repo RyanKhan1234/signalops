@@ -145,37 +145,28 @@ async function runTest(browser, testId, promptText, description, passCriteria) {
     const beforePath = await takeScreenshot(page, `${testId}-before`);
     result.screenshots.push(beforePath);
 
-    // Submit prompt (or empty for T5)
-    await submitPrompt(page, promptText);
+    // Submit prompt — skip for T5 (empty string; we assert button is disabled instead)
+    if (promptText !== '') {
+      await submitPrompt(page, promptText);
+    }
 
     if (promptText === '') {
-      // T5: Empty submit - check immediately for error or graceful handling
-      await page.waitForTimeout(2000);
+      // T5: Empty submit - do NOT call submitPrompt() since it tries to click a disabled button.
+      // Instead, directly assert the button is disabled (correct app behaviour).
+      await page.waitForTimeout(500);
       const afterPath = await takeScreenshot(page, `${testId}-empty-submit`);
       result.screenshots.push(afterPath);
 
-      const { checks, pageText } = await checkForDigestContent(page);
-
-      // Check: button should still be disabled when empty (canSubmit = false)
       const submitBtn = page.locator('button[aria-label="Submit digest request"]');
       const isDisabled = await submitBtn.isDisabled();
 
       if (isDisabled) {
         result.status = 'PASS';
-        result.observations.push('Submit button correctly disabled when input is empty - prevents empty submission');
-        result.observations.push('UI does not crash on empty submit attempt');
+        result.observations.push('Submit button correctly disabled when input is empty — prevents empty submission');
+        result.observations.push('UI stable and uncrashed with empty textarea');
       } else {
-        // If button was enabled and we clicked it, check for validation error
-        if (checks.hasValidationError || checks.hasError) {
-          result.status = 'PASS';
-          result.observations.push('Validation error shown for empty submission');
-        } else if (checks.hasContent) {
-          result.status = 'FAIL';
-          result.bugs.push('Empty prompt was accepted and generated a response - should show validation error');
-        } else {
-          result.status = 'PASS';
-          result.observations.push('Graceful empty state - no crash, blank input not processed');
-        }
+        result.status = 'FAIL';
+        result.bugs.push('Submit button unexpectedly enabled with empty input');
       }
 
       results.push(result);
