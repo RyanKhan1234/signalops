@@ -60,34 +60,34 @@ async function submitPrompt(page, promptText) {
 }
 
 async function waitForResponse(page, timeoutMs = WAIT_FOR_RESULT_TIMEOUT) {
-  // Wait for loading to finish - the button text changes from "Generating..." back to "Generate Digest"
-  // OR wait for digest content to appear
+  // Dashboard layout: EmptyState unmounts when loading starts (ChatInput disappears),
+  // then a full-page spinner renders, then DashboardContent appears when complete.
+  // Start  → textarea[aria-label="Digest prompt"] detaches from DOM
+  // Complete → button[aria-label="Clear digest and start over"] becomes visible
   try {
-    // First wait for loading to start (button becomes "Generating...")
     log('Waiting for generation to start...');
-    await page.waitForSelector('text=Generating...', { timeout: 15000 });
+    await page.waitForSelector('textarea[aria-label="Digest prompt"]', {
+      state: 'detached',
+      timeout: 15000,
+    });
     log('Generation started, waiting for completion...');
 
-    // Now wait for "Generate Digest" to come back (loading finished)
-    await page.waitForSelector('text=Generate Digest', {
+    // "New Digest" button only renders when latestDigest && !isLoading
+    await page.waitForSelector('button[aria-label="Clear digest and start over"]', {
       timeout: timeoutMs,
-      state: 'visible'
+      state: 'visible',
     });
     log('Generation complete.');
 
-    // Small extra wait for content to render
     await page.waitForTimeout(1000);
     return true;
   } catch (err) {
     log(`Warning: Loading state detection failed: ${err.message}`);
-    // Try waiting for any content that indicates a result
+    // Fallback: Executive Summary heading appears in DashboardContent
     try {
-      await page.waitForSelector('[data-testid="digest-card"], .digest-card, article, [role="article"]', {
-        timeout: 30000
-      });
+      await page.waitForSelector('text=Executive Summary', { timeout: 30000 });
       return true;
     } catch (_) {
-      // Just wait a fixed time as last resort
       await page.waitForTimeout(10000);
       return false;
     }
@@ -145,37 +145,28 @@ async function runTest(browser, testId, promptText, description, passCriteria) {
     const beforePath = await takeScreenshot(page, `${testId}-before`);
     result.screenshots.push(beforePath);
 
-    // Submit prompt (or empty for T5)
-    await submitPrompt(page, promptText);
+    // Submit prompt — skip for T5 (empty string; we assert button is disabled instead)
+    if (promptText !== '') {
+      await submitPrompt(page, promptText);
+    }
 
     if (promptText === '') {
-      // T5: Empty submit - check immediately for error or graceful handling
-      await page.waitForTimeout(2000);
+      // T5: Empty submit - do NOT call submitPrompt() since it tries to click a disabled button.
+      // Instead, directly assert the button is disabled (correct app behaviour).
+      await page.waitForTimeout(500);
       const afterPath = await takeScreenshot(page, `${testId}-empty-submit`);
       result.screenshots.push(afterPath);
 
-      const { checks, pageText } = await checkForDigestContent(page);
-
-      // Check: button should still be disabled when empty (canSubmit = false)
       const submitBtn = page.locator('button[aria-label="Submit digest request"]');
       const isDisabled = await submitBtn.isDisabled();
 
       if (isDisabled) {
         result.status = 'PASS';
-        result.observations.push('Submit button correctly disabled when input is empty - prevents empty submission');
-        result.observations.push('UI does not crash on empty submit attempt');
+        result.observations.push('Submit button correctly disabled when input is empty — prevents empty submission');
+        result.observations.push('UI stable and uncrashed with empty textarea');
       } else {
-        // If button was enabled and we clicked it, check for validation error
-        if (checks.hasValidationError || checks.hasError) {
-          result.status = 'PASS';
-          result.observations.push('Validation error shown for empty submission');
-        } else if (checks.hasContent) {
-          result.status = 'FAIL';
-          result.bugs.push('Empty prompt was accepted and generated a response - should show validation error');
-        } else {
-          result.status = 'PASS';
-          result.observations.push('Graceful empty state - no crash, blank input not processed');
-        }
+        result.status = 'FAIL';
+        result.bugs.push('Submit button unexpectedly enabled with empty input');
       }
 
       results.push(result);
