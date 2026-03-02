@@ -1,0 +1,27 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://signalops.io/schemas/digest-request.json",
+  "title": "DigestRequest",
+  "description": "Request body for POST /digest endpoint on the Agent Orchestrator.",
+  "type": "object",
+  "required": ["prompt"],
+  "additionalProperties": false,
+  "properties": {
+    "prompt": {
+      "type": "string",
+      "description": "Natural language prompt from the ops team member.",
+      "minLength": 1,
+      "maxLength": 2000,
+      "examples": [
+        "Anything important about Walmart Connect this week?",
+        "Daily digest for Salesforce competitors",
+        "Risk alert: Adobe acquisition rumors"
+      ]
+    },
+    "user_id": {
+      "type": "string",
+      "description": "Optional user identifier for multi-user tracking.",
+      "maxLength": 100
+    }
+  }
+}

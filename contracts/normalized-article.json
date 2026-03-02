@@ -1,0 +1,92 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://signalops.io/schemas/normalized-article.json",
+  "title": "NormalizedArticleResponse",
+  "description": "Normalized response returned by MCP Wrapper tools (search_news, search_company_news). This is the contract between MCP Wrapper and Agent Orchestrator.",
+  "type": "object",
+  "required": ["articles", "query", "total_results", "cached", "request_id"],
+  "additionalProperties": false,
+  "properties": {
+    "articles": {
+      "type": "array",
+      "description": "List of normalized news articles returned by the search.",
+      "items": {
+        "$ref": "#/definitions/NormalizedArticle"
+      }
+    },
+    "query": {
+      "type": "string",
+      "description": "The search query that was executed (may differ slightly from input after normalization)."
+    },
+    "total_results": {
+      "type": "integer",
+      "description": "Total number of results available (may be more than returned in articles array).",
+      "minimum": 0
+    },
+    "cached": {
+      "type": "boolean",
+      "description": "True if this response was served from cache, false if it required a live SerpApi call."
+    },
+    "request_id": {
+      "type": "string",
+      "description": "UUID correlation ID for this MCP tool call, used for traceability.",
+      "format": "uuid"
+    }
+  },
+  "definitions": {
+    "NormalizedArticle": {
+      "type": "object",
+      "required": ["title", "url", "source", "published_date", "snippet"],
+      "additionalProperties": false,
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Article title, with HTML entities decoded.",
+          "minLength": 1
+        },
+        "url": {
+          "type": "string",
+          "description": "Canonical URL of the article.",
+          "format": "uri"
+        },
+        "source": {
+          "type": "string",
+          "description": "Publisher name (e.g., 'Reuters', 'TechCrunch', 'Bloomberg')."
+        },
+        "published_date": {
+          "type": "string",
+          "description": "Publication date in ISO 8601 UTC format. Relative dates from SerpApi (e.g., '2 hours ago') are converted to absolute timestamps.",
+          "format": "date-time",
+          "examples": ["2026-03-01T09:30:00Z"]
+        },
+        "snippet": {
+          "type": "string",
+          "description": "Short excerpt from the article, with HTML entities decoded."
+        },
+        "thumbnail_url": {
+          "type": ["string", "null"],
+          "description": "URL of article thumbnail image if available, null otherwise.",
+          "format": "uri"
+        }
+      }
+    }
+  },
+  "examples": [
+    {
+      "articles": [
+        {
+          "title": "Walmart Connect Expands Self-Serve Advertising Platform",
+          "url": "https://example.com/walmart-connect-self-serve",
+          "source": "Advertising Age",
+          "published_date": "2026-02-28T14:00:00Z",
+          "snippet": "Walmart Connect announced a major expansion of its self-serve advertising tools, making it easier for mid-market brands to purchase media directly.",
+          "thumbnail_url": "https://example.com/images/walmart-connect.jpg"
+        }
+      ],
+      "query": "Walmart Connect",
+      "total_results": 47,
+      "cached": false,
+      "request_id": "550e8400-e29b-41d4-a716-446655440000"
+    }
+  ]
+}
