@@ -7,9 +7,15 @@
  * Base URL is configured via the VITE_API_BASE_URL environment variable.
  */
 
-import type { DigestRequest, DigestResponse, ApiError } from '../types/digest';
+import type { DigestRequest, DigestResponse, ApiError, PaginatedReports } from '../types/digest';
 
 const BASE_URL = import.meta.env['VITE_API_BASE_URL'] ?? 'http://localhost:8000';
+
+/**
+ * Base URL for the Traceability Store, proxied through nginx under /history/.
+ * In development (direct Vite), falls back to the docker-mapped port.
+ */
+const HISTORY_BASE_URL = import.meta.env['VITE_HISTORY_BASE_URL'] ?? '/history';
 
 /**
  * Generates a random correlation ID for request tracing.
@@ -147,4 +153,117 @@ export async function checkApiHealth(): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+/**
+ * Fetches a paginated list of past digest reports from the Traceability Store.
+ *
+ * @param params - Optional filter/pagination parameters
+ * @returns Paginated list of report summaries
+ * @throws DigestApiError on network or API errors
+ */
+export async function listReports(params?: {
+  limit?: number;
+  offset?: number;
+  digest_type?: string;
+}): Promise<PaginatedReports> {
+  const url = new URL(`${HISTORY_BASE_URL}/api/reports`, window.location.origin);
+  if (params?.limit !== undefined) url.searchParams.set('limit', String(params.limit));
+  if (params?.offset !== undefined) url.searchParams.set('offset', String(params.offset));
+  if (params?.digest_type) url.searchParams.set('digest_type', params.digest_type);
+
+  let response: Response;
+  try {
+    response = await fetch(url.toString(), {
+      method: 'GET',
+      headers: { Accept: 'application/json' },
+    });
+  } catch (err) {
+    throw new DigestApiError(
+      'Unable to reach the history service. Please check your connection.',
+      'NETWORK_ERROR',
+      { details: { originalError: String(err) } }
+    );
+  }
+
+  let body: unknown;
+  try {
+    body = await response.json();
+  } catch {
+    throw new DigestApiError(
+      `History API returned an invalid response (HTTP ${response.status})`,
+      'INVALID_RESPONSE',
+      { httpStatus: response.status }
+    );
+  }
+
+  if (!response.ok) {
+    if (isApiError(body)) {
+      throw new DigestApiError(body.error.message, body.error.code, {
+        details: body.error.details,
+        retryAfterSeconds: body.error.retry_after_seconds,
+        httpStatus: response.status,
+      });
+    }
+    throw new DigestApiError(
+      `History API request failed with status ${response.status}`,
+      'HTTP_ERROR',
+      { httpStatus: response.status }
+    );
+  }
+
+  return body as PaginatedReports;
+}
+
+/**
+ * Fetches the full digest detail for a single report by its report_id.
+ * Extracts and returns the digest_json field, which is a DigestResponse.
+ *
+ * @param reportId - The human-readable report ID (e.g. "rpt_abc123")
+ * @returns The full DigestResponse stored in digest_json
+ * @throws DigestApiError on network, 404, or API errors
+ */
+export async function getReportById(reportId: string): Promise<DigestResponse> {
+  let response: Response;
+  try {
+    response = await fetch(`${HISTORY_BASE_URL}/api/reports/${encodeURIComponent(reportId)}`, {
+      method: 'GET',
+      headers: { Accept: 'application/json' },
+    });
+  } catch (err) {
+    throw new DigestApiError(
+      'Unable to reach the history service. Please check your connection.',
+      'NETWORK_ERROR',
+      { details: { originalError: String(err) } }
+    );
+  }
+
+  let body: unknown;
+  try {
+    body = await response.json();
+  } catch {
+    throw new DigestApiError(
+      `History API returned an invalid response (HTTP ${response.status})`,
+      'INVALID_RESPONSE',
+      { httpStatus: response.status }
+    );
+  }
+
+  if (!response.ok) {
+    if (isApiError(body)) {
+      throw new DigestApiError(body.error.message, body.error.code, {
+        details: body.error.details,
+        retryAfterSeconds: body.error.retry_after_seconds,
+        httpStatus: response.status,
+      });
+    }
+    throw new DigestApiError(
+      `History API request failed with status ${response.status}`,
+      'HTTP_ERROR',
+      { httpStatus: response.status }
+    );
+  }
+
+  const detail = body as { digest_json: DigestResponse };
+  return detail.digest_json;
 }
