@@ -45,13 +45,6 @@ services:
       LANGCHAIN_TRACING_V2: ${LANGCHAIN_TRACING_V2:-false}
 
   web-app:
-    volumes:
-      - ./packages/web-app/src:/app/src:ro
-      - ./packages/web-app/public:/app/public:ro
     environment:
       # In dev, the browser calls orchestrator directly (no nginx proxy)
       VITE_API_BASE_URL: http://localhost:8000
-      # Enable React error overlay in development
-      NODE_ENV: development
-    # Vite dev server with HMR
-    command: ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
