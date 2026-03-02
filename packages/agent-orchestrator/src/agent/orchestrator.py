@@ -33,10 +33,14 @@ from src.agent.processor import (
     identify_risks_and_opportunities,
 )
 from src.models.digest import (
+    ActionItem,
     Article,
     DetectedIntent,
     DigestResponse,
+    KeySignal,
     MCPToolResult,
+    Opportunity,
+    Risk,
     ToolPlan,
 )
 from src.models.trace import ToolTraceEntry
@@ -70,6 +74,12 @@ class OrchestratorState(TypedDict):
 
     # Article processing outputs
     all_articles: list[Article]
+
+    # Processing pipeline outputs (set by node_process_articles, read by node_compose_digest)
+    _signals: list[KeySignal]
+    _risks: list[Risk]
+    _opportunities: list[Opportunity]
+    _action_items: list[ActionItem]
 
     # Composed digest (pre-guardrails)
     draft_digest: DigestResponse | None
