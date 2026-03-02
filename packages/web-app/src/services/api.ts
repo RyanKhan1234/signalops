@@ -216,6 +216,83 @@ export async function listReports(params?: {
 }
 
 /**
+ * Saves a digest report to the Traceability Store history.
+ *
+ * @param digest - The DigestResponse to save
+ * @param query - The original query string used to generate the digest
+ * @returns { alreadySaved: true } if the report was already saved (409), { alreadySaved: false } on success (201)
+ * @throws DigestApiError on network or unexpected API errors
+ */
+export async function saveReport(
+  digest: DigestResponse,
+  query: string
+): Promise<{ alreadySaved: boolean }> {
+  const report_id = digest.report_id ?? crypto.randomUUID();
+  const url = new URL(`${HISTORY_BASE_URL}/api/reports`, window.location.origin);
+
+  const payload = {
+    report_id,
+    digest_type: digest.digest_type,
+    query,
+    digest_json: digest,
+    generated_at: digest.generated_at,
+    user_id: null,
+  };
+
+  let response: Response;
+  try {
+    response = await fetch(url.toString(), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+  } catch (err) {
+    throw new DigestApiError(
+      'Unable to reach the history service. Please check your connection.',
+      'NETWORK_ERROR',
+      { details: { originalError: String(err) } }
+    );
+  }
+
+  // 409 = already saved — treat as success
+  if (response.status === 409) {
+    return { alreadySaved: true };
+  }
+
+  if (response.status === 201) {
+    return { alreadySaved: false };
+  }
+
+  let body: unknown;
+  try {
+    body = await response.json();
+  } catch {
+    throw new DigestApiError(
+      `History API returned an invalid response (HTTP ${response.status})`,
+      'INVALID_RESPONSE',
+      { httpStatus: response.status }
+    );
+  }
+
+  if (isApiError(body)) {
+    throw new DigestApiError(body.error.message, body.error.code, {
+      details: body.error.details,
+      retryAfterSeconds: body.error.retry_after_seconds,
+      httpStatus: response.status,
+    });
+  }
+
+  throw new DigestApiError(
+    `History API request failed with status ${response.status}`,
+    'HTTP_ERROR',
+    { httpStatus: response.status }
+  );
+}
+
+/**
  * Fetches the full digest detail for a single report by its report_id.
  * Extracts and returns the digest_json field, which is a DigestResponse.
  *

@@ -12,6 +12,7 @@
 
 import { useState } from 'react';
 import { useDigest } from './hooks/useDigest';
+import { useSaveReport } from './hooks/useSaveReport';
 import { DebugPanel } from './components/debug/DebugPanel';
 import { LoadingSpinner } from './components/common/LoadingSpinner';
 import {
@@ -27,6 +28,7 @@ type CurrentView = 'digest' | 'history';
 function App() {
   const { isLoading, latestDigest, submitPrompt, clearMessages } =
     useDigest();
+  const { status: saveStatus, save: saveDigest } = useSaveReport();
   const [currentView, setCurrentView] = useState<CurrentView>('digest');
 
   return (
@@ -96,14 +98,92 @@ function App() {
           )}
 
           {currentView === 'digest' && latestDigest && (
-            <button
-              type="button"
-              onClick={clearMessages}
-              className="text-sm text-gray-600 hover:text-gray-900 border border-gray-200 rounded-lg px-3 py-1.5 hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-1"
-              aria-label="Clear digest and start over"
-            >
-              New Digest
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={() => saveDigest(latestDigest, latestDigest.query)}
+                disabled={saveStatus === 'saving' || saveStatus === 'saved'}
+                className={
+                  saveStatus === 'saved'
+                    ? 'text-sm border rounded-lg px-3 py-1.5 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 bg-green-50 border-green-300 text-green-700 cursor-default focus:ring-green-400'
+                    : saveStatus === 'error'
+                    ? 'text-sm border rounded-lg px-3 py-1.5 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 bg-red-50 border-red-300 text-red-700 hover:bg-red-100 focus:ring-red-400'
+                    : saveStatus === 'saving'
+                    ? 'text-sm border rounded-lg px-3 py-1.5 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 border-gray-200 text-gray-400 cursor-not-allowed focus:ring-gray-400'
+                    : 'text-sm text-gray-600 hover:text-gray-900 border border-gray-200 rounded-lg px-3 py-1.5 hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-1'
+                }
+                aria-label="Save digest to history"
+              >
+                {saveStatus === 'saving' && (
+                  <span className="flex items-center gap-1.5">
+                    <svg
+                      className="h-3.5 w-3.5 animate-spin"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      aria-hidden="true"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      />
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 00-8 8h4z"
+                      />
+                    </svg>
+                    Saving&hellip;
+                  </span>
+                )}
+                {saveStatus === 'saved' && (
+                  <span className="flex items-center gap-1.5">
+                    <svg
+                      className="h-3.5 w-3.5"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={2.5}
+                      aria-hidden="true"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                    Saved
+                  </span>
+                )}
+                {saveStatus === 'error' && 'Save failed'}
+                {saveStatus === 'idle' && (
+                  <span className="flex items-center gap-1.5">
+                    <svg
+                      className="h-3.5 w-3.5"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                      aria-hidden="true"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
+                      />
+                    </svg>
+                    Save to History
+                  </span>
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={clearMessages}
+                className="text-sm text-gray-600 hover:text-gray-900 border border-gray-200 rounded-lg px-3 py-1.5 hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-1"
+                aria-label="Clear digest and start over"
+              >
+                New Digest
+              </button>
+            </>
           )}
         </div>
       </header>
