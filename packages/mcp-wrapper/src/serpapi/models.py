@@ -52,6 +52,7 @@ class SerpApiResponse(BaseModel):
     search_parameters: dict[str, Any] | None = None
     search_information: SerpApiSearchInformation | None = None
     news_results: list[dict[str, Any]] | None = None
+    top_stories: list[dict[str, Any]] | None = None
     error: str | None = None
 
     model_config = {"extra": "allow"}

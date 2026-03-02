@@ -184,7 +184,8 @@ def normalize_response(
     articles: list[NormalizedArticle] = []
     seen_urls: set[str] = set()
 
-    for item in raw.news_results or []:
+    raw_results = raw.news_results or raw.top_stories or []
+    for item in raw_results:
         url = item.get("link") or ""
         if not url:
             continue  # Skip results without a URL.

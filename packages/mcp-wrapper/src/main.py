@@ -52,10 +52,60 @@ async def _run_stdio() -> None:
         )
 
 
+async def _dispatch_tool_rest(name: str, arguments: dict) -> dict:
+    """Dispatch REST tool call to the appropriate handler."""
+    from src.server import (
+        _metadata_cache,
+        _rate_limiter,
+        _search_cache,
+        _serpapi_client,
+    )
+    from src.tools.get_article_metadata import execute_get_article_metadata
+    from src.tools.search_company_news import execute_search_company_news
+    from src.tools.search_news import execute_search_news
+
+    if name == "search_news":
+        return await execute_search_news(
+            query=arguments.get("query", ""),
+            time_range=arguments.get("time_range", "7d"),
+            num_results=arguments.get("num_results", 10),
+            client=_serpapi_client,
+            cache=_search_cache,
+            rate_limiter=_rate_limiter,
+        )
+    elif name == "search_company_news":
+        return await execute_search_company_news(
+            company=arguments.get("company", ""),
+            time_range=arguments.get("time_range", "7d"),
+            topics=arguments.get("topics"),
+            client=_serpapi_client,
+            cache=_search_cache,
+            rate_limiter=_rate_limiter,
+        )
+    elif name == "get_article_metadata":
+        return await execute_get_article_metadata(
+            url=arguments.get("url", ""),
+            client=_serpapi_client,
+            cache=_metadata_cache,
+            rate_limiter=_rate_limiter,
+        )
+    else:
+        return {
+            "error": {
+                "code": "UNKNOWN_TOOL",
+                "message": f"Unknown tool: {name!r}",
+                "details": {},
+                "retry_after_seconds": None,
+            }
+        }
+
+
 async def _run_sse() -> None:
     """Run the MCP server on SSE transport."""
     from mcp.server.sse import SseServerTransport
     from starlette.applications import Starlette
+    from starlette.requests import Request
+    from starlette.responses import JSONResponse
     from starlette.routing import Mount, Route
 
     import uvicorn
@@ -80,9 +130,20 @@ async def _run_sse() -> None:
                 server.create_initialization_options(),
             )
 
+    async def handle_tool_rest(request: Request) -> JSONResponse:
+        name = request.path_params["name"]
+        try:
+            body = await request.json()
+        except Exception:
+            body = {}
+
+        result = await _dispatch_tool_rest(name, body)
+        return JSONResponse(result)
+
     starlette_app = Starlette(
         routes=[
             Route("/sse", endpoint=handle_sse),
+            Route("/tools/{name}", endpoint=handle_tool_rest, methods=["POST"]),
             Mount("/messages/", app=sse.handle_post_message),
         ]
     )
