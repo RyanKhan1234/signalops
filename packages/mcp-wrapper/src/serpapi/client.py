@@ -154,7 +154,6 @@ class SerpApiClient:
         params: dict[str, Any] = {
             "engine": "google_news",
             "q": query,
-            "tbm": "nws",
             "tbs": tbs,
             "num": str(num_results),
             "gl": gl,
@@ -200,7 +199,6 @@ class SerpApiClient:
         params: dict[str, Any] = {
             "engine": "google_news",
             "q": url,
-            "tbm": "nws",
             "num": "3",
             "gl": _DEFAULT_GEOLOCATION,
             "api_key": self._api_key,

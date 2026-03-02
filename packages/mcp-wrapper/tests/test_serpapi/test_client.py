@@ -83,7 +83,8 @@ class TestSerpApiClientSearchNews:
         assert params["tbs"] == "qdr:d"
         assert params["num"] == "5"
         assert params["engine"] == "google_news"
-        assert params["tbm"] == "nws"
+        # tbm=nws must NOT be present — it conflicts with engine=google_news (D3 fix)
+        assert "tbm" not in params
         # API key must be in params but let's not assert its value in logs
         assert "api_key" in params
 
