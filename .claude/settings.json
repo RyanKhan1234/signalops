@@ -8,5 +8,11 @@
       "Read(*)",
       "Write(*)"
     ]
+  },
+  "mcpServers": {
+    "playwright": {
+      "command": "playwright-mcp",
+      "args": ["--headless"]
+    }
   }
 }
