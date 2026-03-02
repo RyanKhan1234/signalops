@@ -1,14 +1,16 @@
 """FastAPI application factory for the Traceability Store."""
 
 import logging
+from typing import Annotated
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.api.routes import metrics_router, reports_router
 from src.api.schemas import HealthResponse
-from src.db.engine import get_engine, get_session_factory
+from src.db.engine import get_session
 
 logger = logging.getLogger(__name__)
 
@@ -45,6 +47,9 @@ def create_app() -> FastAPI:
     app.include_router(metrics_router)
 
     # ── Health check ───────────────────────────────────────────────────────
+    # The health endpoint uses the injected session so that in tests it
+    # connects to the SQLite test database rather than the production
+    # PostgreSQL URL from the environment.
     @app.get(
         "/health",
         response_model=HealthResponse,
@@ -55,13 +60,13 @@ def create_app() -> FastAPI:
             "Performs a live database connectivity check."
         ),
     )
-    async def health() -> HealthResponse:
+    async def health(
+        session: Annotated[AsyncSession, Depends(get_session)],
+    ) -> HealthResponse:
         """Verify the service is up and the database is reachable."""
         db_connected = False
         try:
-            engine = get_engine()
-            async with engine.connect() as conn:
-                await conn.execute(text("SELECT 1"))
+            await session.execute(text("SELECT 1"))
             db_connected = True
         except Exception:
             logger.exception("Health check: database connectivity failed")

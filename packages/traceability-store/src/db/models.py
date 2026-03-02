@@ -1,4 +1,9 @@
-"""SQLAlchemy ORM models for the Traceability Store."""
+"""SQLAlchemy ORM models for the Traceability Store.
+
+JSON storage note: JSONB is used on PostgreSQL for efficient storage and
+indexing. For SQLite (used in tests) the same columns fall back to standard
+JSON via the ``FlexibleJSON`` custom type below.
+"""
 
 import uuid
 from datetime import datetime
@@ -8,12 +13,31 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     Integer,
+    JSON,
     Text,
     Uuid,
     func,
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+from sqlalchemy.types import TypeDecorator
+
+
+class FlexibleJSON(TypeDecorator):
+    """JSON type that renders as JSONB on PostgreSQL and JSON elsewhere (SQLite).
+
+    This lets the ORM models work transparently in both production (asyncpg +
+    PostgreSQL) and test (aiosqlite + SQLite) environments without any import
+    monkey-patching.
+    """
+
+    impl = JSON
+    cache_ok = True
+
+    def load_dialect_impl(self, dialect):
+        if dialect.name == "postgresql":
+            return dialect.type_descriptor(JSONB())
+        return dialect.type_descriptor(JSON())
 
 
 class Base(DeclarativeBase):
@@ -24,7 +48,8 @@ class Report(Base):
     """Stores every generated digest report.
 
     One row per digest. The full structured digest is stored in ``digest_json``
-    as JSONB so the schema does not need to change when the digest format evolves.
+    as JSONB (PostgreSQL) / JSON (SQLite) so the schema does not need to change
+    when the digest format evolves.
     """
 
     __tablename__ = "reports"
@@ -35,7 +60,7 @@ class Report(Base):
     report_id: Mapped[str] = mapped_column(Text, unique=True, nullable=False, index=True)
     digest_type: Mapped[str] = mapped_column(Text, nullable=False, index=True)
     query: Mapped[str] = mapped_column(Text, nullable=False)
-    digest_json: Mapped[dict] = mapped_column(JSONB, nullable=False)
+    digest_json: Mapped[dict] = mapped_column(FlexibleJSON, nullable=False)
     user_id: Mapped[str | None] = mapped_column(Text, nullable=True, index=True)
     generated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, index=True
@@ -60,8 +85,8 @@ class Report(Base):
 class ToolCall(Base):
     """Records every MCP tool call made during digest generation.
 
-    Stores input/output as JSONB for flexibility. The ``latency_ms`` column
-    enables p50/p95/p99 latency metrics across all tool invocations.
+    Stores input/output as FlexibleJSON for flexibility. The ``latency_ms``
+    column enables p50/p95/p99 latency metrics across all tool invocations.
     """
 
     __tablename__ = "tool_calls"
@@ -73,8 +98,8 @@ class ToolCall(Base):
         Text, ForeignKey("reports.report_id", ondelete="CASCADE"), nullable=False, index=True
     )
     tool_name: Mapped[str] = mapped_column(Text, nullable=False, index=True)
-    input_json: Mapped[dict] = mapped_column(JSONB, nullable=False)
-    output_json: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    input_json: Mapped[dict] = mapped_column(FlexibleJSON, nullable=False)
+    output_json: Mapped[dict | None] = mapped_column(FlexibleJSON, nullable=True)
     latency_ms: Mapped[int] = mapped_column(Integer, nullable=False)
     status: Mapped[str] = mapped_column(Text, nullable=False, index=True)
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
