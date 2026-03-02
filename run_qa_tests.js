@@ -60,34 +60,34 @@ async function submitPrompt(page, promptText) {
 }
 
 async function waitForResponse(page, timeoutMs = WAIT_FOR_RESULT_TIMEOUT) {
-  // Wait for loading to finish - the button text changes from "Generating..." back to "Generate Digest"
-  // OR wait for digest content to appear
+  // Dashboard layout: EmptyState unmounts when loading starts (ChatInput disappears),
+  // then a full-page spinner renders, then DashboardContent appears when complete.
+  // Start  → textarea[aria-label="Digest prompt"] detaches from DOM
+  // Complete → button[aria-label="Clear digest and start over"] becomes visible
   try {
-    // First wait for loading to start (button becomes "Generating...")
     log('Waiting for generation to start...');
-    await page.waitForSelector('text=Generating...', { timeout: 15000 });
+    await page.waitForSelector('textarea[aria-label="Digest prompt"]', {
+      state: 'detached',
+      timeout: 15000,
+    });
     log('Generation started, waiting for completion...');
 
-    // Now wait for "Generate Digest" to come back (loading finished)
-    await page.waitForSelector('text=Generate Digest', {
+    // "New Digest" button only renders when latestDigest && !isLoading
+    await page.waitForSelector('button[aria-label="Clear digest and start over"]', {
       timeout: timeoutMs,
-      state: 'visible'
+      state: 'visible',
     });
     log('Generation complete.');
 
-    // Small extra wait for content to render
     await page.waitForTimeout(1000);
     return true;
   } catch (err) {
     log(`Warning: Loading state detection failed: ${err.message}`);
-    // Try waiting for any content that indicates a result
+    // Fallback: Executive Summary heading appears in DashboardContent
     try {
-      await page.waitForSelector('[data-testid="digest-card"], .digest-card, article, [role="article"]', {
-        timeout: 30000
-      });
+      await page.waitForSelector('text=Executive Summary', { timeout: 30000 });
       return true;
     } catch (_) {
-      // Just wait a fixed time as last resort
       await page.waitForTimeout(10000);
       return false;
     }
