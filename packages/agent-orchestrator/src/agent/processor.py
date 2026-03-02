@@ -11,6 +11,7 @@ Processes raw article lists through:
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import re
@@ -28,6 +29,8 @@ from src.models.digest import (
 )
 
 logger = logging.getLogger(__name__)
+
+_FAST_MODEL = "claude-haiku-4-5-20251001"  # for intermediate processing steps
 
 
 def _extract_json(text: str) -> str:
@@ -204,7 +207,7 @@ async def cluster_articles(articles: list[Article]) -> list[ArticleCluster]:
     prompt = CLUSTERING_PROMPT.replace("{articles_json}", articles_json)
 
     message = await client.messages.create(
-        model=settings.anthropic_model,
+        model=_FAST_MODEL,
         max_tokens=4096,
         messages=[{"role": "user", "content": prompt}],
     )
@@ -242,8 +245,59 @@ async def cluster_articles(articles: list[Article]) -> list[ArticleCluster]:
     return clusters
 
 
+async def _extract_signal_for_cluster(
+    client: AsyncAnthropic, cluster: ArticleCluster
+) -> KeySignal | None:
+    """Extract signal for a single cluster. Returns None on failure."""
+    if not cluster.articles:
+        return None
+
+    articles_data = [
+        {"index": i, "title": a.title, "snippet": a.snippet[:300], "url": a.url}
+        for i, a in enumerate(cluster.articles)
+    ]
+    articles_json = json.dumps(articles_data, indent=2)
+    prompt = SIGNAL_EXTRACTION_PROMPT.replace("{theme}", cluster.theme).replace(
+        "{articles_json}", articles_json
+    )
+
+    try:
+        message = await client.messages.create(
+            model=_FAST_MODEL,
+            max_tokens=512,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        raw = message.content[0].text.strip()
+        parsed = json.loads(_extract_json(raw))
+
+        best_idx = parsed.get("best_article_index", 0)
+        if not isinstance(best_idx, int) or best_idx < 0 or best_idx >= len(cluster.articles):
+            best_idx = 0
+
+        best_article = cluster.articles[best_idx]
+        signal_text = parsed.get("signal", "")
+        relevance = parsed.get("relevance", "medium")
+        if relevance not in ("high", "medium", "low"):
+            relevance = "medium"
+
+        if signal_text:
+            return KeySignal(
+                signal=signal_text,
+                source_url=best_article.url,
+                source_title=best_article.title,
+                published_date=best_article.published_date,
+                relevance=relevance,  # type: ignore[arg-type]
+            )
+    except (json.JSONDecodeError, KeyError, IndexError) as exc:
+        logger.warning("Failed to extract signal for cluster '%s': %s", cluster.theme, exc)
+
+    return None
+
+
 async def extract_signals(clusters: list[ArticleCluster]) -> list[KeySignal]:
     """Extract the key business signal from each article cluster.
+
+    All clusters are processed concurrently via asyncio.gather().
 
     Args:
         clusters: List of article clusters with themes.
@@ -255,50 +309,16 @@ async def extract_signals(clusters: list[ArticleCluster]) -> list[KeySignal]:
         return []
 
     client = AsyncAnthropic(api_key=settings.anthropic_api_key)
+
+    tasks = [_extract_signal_for_cluster(client, cluster) for cluster in clusters]
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+
     signals: list[KeySignal] = []
-
-    for cluster in clusters:
-        if not cluster.articles:
-            continue
-
-        articles_data = [
-            {"index": i, "title": a.title, "snippet": a.snippet[:300], "url": a.url}
-            for i, a in enumerate(cluster.articles)
-        ]
-        articles_json = json.dumps(articles_data, indent=2)
-        prompt = SIGNAL_EXTRACTION_PROMPT.replace("{theme}", cluster.theme).replace("{articles_json}", articles_json)
-
-        try:
-            message = await client.messages.create(
-                model=settings.anthropic_model,
-                max_tokens=512,
-                messages=[{"role": "user", "content": prompt}],
-            )
-            raw = message.content[0].text.strip()
-            parsed = json.loads(_extract_json(raw))
-
-            best_idx = parsed.get("best_article_index", 0)
-            if not isinstance(best_idx, int) or best_idx < 0 or best_idx >= len(cluster.articles):
-                best_idx = 0
-
-            best_article = cluster.articles[best_idx]
-            signal_text = parsed.get("signal", "")
-            relevance = parsed.get("relevance", "medium")
-            if relevance not in ("high", "medium", "low"):
-                relevance = "medium"
-
-            if signal_text:
-                signals.append(
-                    KeySignal(
-                        signal=signal_text,
-                        source_url=best_article.url,
-                        source_title=best_article.title,
-                        published_date=best_article.published_date,
-                        relevance=relevance,  # type: ignore[arg-type]
-                    )
-                )
-        except (json.JSONDecodeError, KeyError, IndexError) as exc:
-            logger.warning("Failed to extract signal for cluster '%s': %s", cluster.theme, exc)
+    for r in results:
+        if isinstance(r, KeySignal):
+            signals.append(r)
+        elif isinstance(r, Exception):
+            logger.warning("Signal extraction task raised an exception: %s", r)
 
     # Sort by relevance: high > medium > low
     relevance_order = {"high": 0, "medium": 1, "low": 2}
@@ -342,7 +362,7 @@ async def identify_risks_and_opportunities(
 
     try:
         message = await client.messages.create(
-            model=settings.anthropic_model,
+            model=_FAST_MODEL,
             max_tokens=1024,
             messages=[{"role": "user", "content": prompt}],
         )
@@ -436,7 +456,7 @@ async def generate_action_items(
 
     try:
         message = await client.messages.create(
-            model=settings.anthropic_model,
+            model=_FAST_MODEL,
             max_tokens=1024,
             messages=[{"role": "user", "content": prompt}],
         )
