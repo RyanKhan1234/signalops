@@ -1,0 +1,41 @@
+{
+  "search_parameters": {
+    "engine": "google_news",
+    "q": "Walmart Connect retail media",
+    "tbm": "nws",
+    "tbs": "qdr:w",
+    "num": "10",
+    "gl": "us"
+  },
+  "search_information": {
+    "total_results": "3",
+    "time_taken_displayed": 0.42,
+    "query_displayed": "Walmart Connect retail media"
+  },
+  "news_results": [
+    {
+      "title": "Walmart Connect Expands Self-Serve Ad Platform for SMBs",
+      "link": "https://www.retaildive.com/news/walmart-connect-self-serve-smb/123456/",
+      "source": "Retail Dive",
+      "date": "2 hours ago",
+      "snippet": "Walmart Connect announced the expansion of its self-serve advertising platform, giving small and medium-sized businesses access to sponsored search placements across Walmart.com.",
+      "thumbnail": "https://example.com/thumb1.jpg"
+    },
+    {
+      "title": "Walmart &amp; Roku Partner on Shoppable TV Ads",
+      "link": "https://www.adweek.com/retail/walmart-roku-shoppable-tv/789012/",
+      "source": "Adweek",
+      "date": "1 day ago",
+      "snippet": "Walmart Connect and Roku have inked a partnership to deliver shoppable TV ads that let viewers purchase products directly from their screens using Walmart&#39;s checkout.",
+      "thumbnail": "https://example.com/thumb2.jpg"
+    },
+    {
+      "title": "Retail Media Q1 2026 Roundup: Winners &amp; Losers",
+      "link": "https://www.emarketer.com/retail-media-q1-2026/",
+      "source": "eMarketer",
+      "date": "3 days ago",
+      "snippet": "Retail media networks continue to grow rapidly. Walmart Connect posted strong Q1 numbers, while Amazon Advertising maintained its lead in sponsored product placements.",
+      "thumbnail": null
+    }
+  ]
+}
