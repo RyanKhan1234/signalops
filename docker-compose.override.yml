@@ -1,0 +1,66 @@
+# SignalOps — Docker Compose Development Overrides
+#
+# This file is automatically merged with docker-compose.yml when running
+# `docker compose up` locally. It adds volume mounts for hot-reload and
+# enables development-specific settings.
+#
+# For production: docker compose -f docker-compose.yml up
+
+version: "3.9"
+
+services:
+  postgres:
+    # Expose postgres directly for local DB tools (TablePlus, psql, etc.)
+    ports:
+      - "5432:5432"
+
+  traceability-store:
+    build:
+      target: development
+    volumes:
+      # Hot-reload: mount source so changes take effect without rebuild
+      - ./packages/traceability-store/src:/app/src:ro
+      - ./packages/traceability-store/tests:/app/tests:ro
+    environment:
+      LOG_LEVEL: DEBUG
+      # Enable SQLAlchemy query logging in dev
+      DB_ECHO: "true"
+    # Use watchfiles/uvicorn --reload in development image target
+
+  mcp-wrapper:
+    build:
+      target: development
+    volumes:
+      - ./packages/mcp-wrapper/src:/app/src:ro
+      - ./packages/mcp-wrapper/tests:/app/tests:ro
+    environment:
+      LOG_LEVEL: DEBUG
+      # In development, point to a mock SerpApi server for offline dev
+      # Override SERPAPI_BASE_URL to use the mock if running mock-serpapi service
+      SERPAPI_BASE_URL: ${SERPAPI_BASE_URL_DEV:-https://serpapi.com/search}
+
+  agent-orchestrator:
+    build:
+      target: development
+    volumes:
+      - ./packages/agent-orchestrator/src:/app/src:ro
+      - ./packages/agent-orchestrator/tests:/app/tests:ro
+    environment:
+      LOG_LEVEL: DEBUG
+      # Reduce LangChain verbosity — set to 1 for full chain tracing
+      LANGCHAIN_VERBOSE: ${LANGCHAIN_VERBOSE:-0}
+      LANGCHAIN_TRACING_V2: ${LANGCHAIN_TRACING_V2:-false}
+
+  web-app:
+    build:
+      target: development
+    volumes:
+      - ./packages/web-app/src:/app/src:ro
+      - ./packages/web-app/public:/app/public:ro
+    environment:
+      # In dev, the browser calls orchestrator directly (no nginx proxy)
+      VITE_API_BASE_URL: http://localhost:8000
+      # Enable React error overlay in development
+      NODE_ENV: development
+    # Vite dev server with HMR
+    command: ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
