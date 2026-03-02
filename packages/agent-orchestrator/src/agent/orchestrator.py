@@ -16,6 +16,7 @@ State is a typed dict that flows through every node.
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from typing import Annotated, Any, TypedDict
 
@@ -390,7 +391,13 @@ async def run_pipeline(prompt: str, correlation_id: str = "") -> DigestResponse:
     }
 
     logger.info("Starting pipeline for correlation_id=%s prompt='%s'", correlation_id, prompt[:80])
-    final_state = await compiled_graph.ainvoke(initial_state)
+    try:
+        final_state = await asyncio.wait_for(
+            compiled_graph.ainvoke(initial_state),
+            timeout=120.0,  # 2 minutes max
+        )
+    except asyncio.TimeoutError:
+        raise RuntimeError("Orchestrator pipeline timed out after 120 seconds")
 
     if final_state.get("error"):
         error_msg = final_state["error"]
