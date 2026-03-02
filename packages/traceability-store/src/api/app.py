@@ -10,7 +10,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.api.routes import metrics_router, reports_router
 from src.api.schemas import HealthResponse
-from src.db.engine import get_session
+from src.db.engine import get_engine, get_session
+from src.db.models import Base
 
 logger = logging.getLogger(__name__)
 
@@ -41,6 +42,14 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+    @app.on_event("startup")
+    async def _create_tables() -> None:
+        """Ensure all database tables exist on startup (idempotent)."""
+        engine = get_engine()
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+        logger.info("Database tables verified/created")
 
     # Register routers
     app.include_router(reports_router)
