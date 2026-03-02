@@ -2,7 +2,6 @@
 # Usage: docker compose up --build
 # All services start in dependency order. Postgres health check gates dependent services.
 
-version: "3.9"
 
 services:
   # ─── PostgreSQL Database ───────────────────────────────────────────────────
