@@ -1,0 +1,194 @@
+"""Intent detection and entity extraction for the Agent Orchestrator.
+
+Classifies incoming natural-language prompts into one of four digest types
+and extracts structured entities (company names, topics, time ranges).
+"""
+
+from __future__ import annotations
+
+import json
+import logging
+
+from anthropic import AsyncAnthropic
+
+from src.config import settings
+from src.models.digest import DetectedIntent, DigestType
+
+logger = logging.getLogger(__name__)
+
+# ---------------------------------------------------------------------------
+# Prompt templates — kept in version-controlled code, not external storage
+# ---------------------------------------------------------------------------
+
+INTENT_SYSTEM_PROMPT = """You are an intent classifier for a competitive intelligence platform.
+
+Your job is to analyze a user's natural-language prompt and return a structured JSON object
+describing the intent and entities. You must output ONLY valid JSON — no preamble, no markdown.
+
+The JSON must conform to this schema:
+{
+  "intent_type": "<daily_digest|weekly_report|risk_alert|competitor_monitor>",
+  "entities": ["<company name or topic>", ...],
+  "time_range": "<1d|7d|30d>",
+  "original_query": "<the original user prompt verbatim>"
+}
+
+Intent classification rules:
+- daily_digest: keywords like "today", "this morning", "overnight", "daily", "latest", "just now"
+- weekly_report: keywords like "this week", "weekly", "past 7 days", "7 days", "week"
+- risk_alert: keywords like "risk", "threat", "concern", "watch out", "danger", "losing", "warn"
+- competitor_monitor: keywords like "new competitor", "emerging", "who else", "landscape", "rising", "new player"
+
+Default time_range mapping:
+- daily_digest → "1d"
+- weekly_report → "7d"
+- risk_alert → "1d"
+- competitor_monitor → "30d"
+
+Entity extraction:
+- Extract all company names, product names, industries, and specific topics mentioned
+- If no entity is explicitly named, infer from context (e.g., "retail media" is an entity)
+- Always include at least one entity
+
+Do not hallucinate. Output only what is present in the prompt."""
+
+
+async def detect_intent(prompt: str) -> DetectedIntent:
+    """Classify a user prompt into a structured DetectedIntent.
+
+    Uses the Anthropic API with structured JSON output to reliably extract
+    intent type, entities, and time range from natural language.
+
+    Args:
+        prompt: The raw user-submitted natural language prompt.
+
+    Returns:
+        A DetectedIntent instance with classified fields.
+
+    Raises:
+        ValueError: If the LLM returns malformed JSON or missing required fields.
+    """
+    logger.info("Detecting intent for prompt: %s", prompt[:100])
+
+    client = AsyncAnthropic(api_key=settings.anthropic_api_key)
+
+    message = await client.messages.create(
+        model=settings.anthropic_model,
+        max_tokens=512,
+        system=INTENT_SYSTEM_PROMPT,
+        messages=[
+            {
+                "role": "user",
+                "content": f"Classify this prompt:\n\n{prompt}",
+            }
+        ],
+    )
+
+    raw_text = message.content[0].text.strip()
+    logger.debug("Raw intent response: %s", raw_text)
+
+    try:
+        parsed = json.loads(raw_text)
+    except json.JSONDecodeError as exc:
+        logger.error("Failed to parse intent JSON: %s — raw: %s", exc, raw_text)
+        # Graceful fallback: treat as weekly_report with generic entity
+        return _fallback_intent(prompt)
+
+    # Validate required fields are present
+    required_fields = {"intent_type", "entities", "time_range", "original_query"}
+    missing = required_fields - set(parsed.keys())
+    if missing:
+        logger.warning("Intent response missing fields %s — using fallback", missing)
+        return _fallback_intent(prompt)
+
+    # Ensure intent_type is valid
+    valid_types: set[DigestType] = {
+        "daily_digest",
+        "weekly_report",
+        "risk_alert",
+        "competitor_monitor",
+    }
+    if parsed["intent_type"] not in valid_types:
+        logger.warning("Unknown intent_type '%s' — defaulting to weekly_report", parsed["intent_type"])
+        parsed["intent_type"] = "weekly_report"
+
+    # Ensure entities is a non-empty list
+    if not parsed.get("entities"):
+        parsed["entities"] = ["general competitive intelligence"]
+
+    return DetectedIntent(
+        intent_type=parsed["intent_type"],
+        entities=parsed["entities"],
+        time_range=parsed["time_range"],
+        original_query=prompt,
+    )
+
+
+def _fallback_intent(prompt: str) -> DetectedIntent:
+    """Return a safe fallback intent when LLM response cannot be parsed."""
+    return DetectedIntent(
+        intent_type="weekly_report",
+        entities=["general competitive intelligence"],
+        time_range="7d",
+        original_query=prompt,
+    )
+
+
+def detect_intent_heuristic(prompt: str) -> DetectedIntent:
+    """Heuristic-based intent detection (no LLM required).
+
+    Used as a fast path or fallback when the LLM is unavailable.
+    Less accurate than the LLM-based approach but always available.
+
+    Args:
+        prompt: The raw user-submitted natural language prompt.
+
+    Returns:
+        A DetectedIntent instance derived from keyword matching.
+    """
+    prompt_lower = prompt.lower()
+
+    # Determine intent type
+    if any(kw in prompt_lower for kw in ["risk", "threat", "concern", "watch out", "danger", "warn"]):
+        intent_type: DigestType = "risk_alert"
+        time_range = "1d"
+    elif any(kw in prompt_lower for kw in ["new competitor", "emerging", "who else", "landscape", "rising"]):
+        intent_type = "competitor_monitor"
+        time_range = "30d"
+    elif any(kw in prompt_lower for kw in ["this week", "weekly", "past 7 days", "7 days"]):
+        intent_type = "weekly_report"
+        time_range = "7d"
+    elif any(kw in prompt_lower for kw in ["today", "this morning", "overnight", "daily", "latest"]):
+        intent_type = "daily_digest"
+        time_range = "1d"
+    else:
+        intent_type = "weekly_report"
+        time_range = "7d"
+
+    # Simple entity extraction: capitalized words and quoted strings
+    import re
+
+    entities: list[str] = []
+    # Extract quoted phrases
+    quoted = re.findall(r'"([^"]+)"', prompt)
+    entities.extend(quoted)
+    # Extract capitalized multi-word phrases (e.g., "Walmart Connect")
+    cap_phrases = re.findall(r"(?:[A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)", prompt)
+    entities.extend(cap_phrases)
+    # Deduplicate while preserving order
+    seen: set[str] = set()
+    unique_entities: list[str] = []
+    for e in entities:
+        if e not in seen:
+            seen.add(e)
+            unique_entities.append(e)
+
+    if not unique_entities:
+        unique_entities = ["general competitive intelligence"]
+
+    return DetectedIntent(
+        intent_type=intent_type,
+        entities=unique_entities,
+        time_range=time_range,
+        original_query=prompt,
+    )
