@@ -27,6 +27,9 @@ COPY --from=builder /app/dist /usr/share/nginx/html
 # Replace the default nginx config with our SPA + API proxy config
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
+# Validate the nginx configuration at image build time
+RUN nginx -t
+
 EXPOSE 3000
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
