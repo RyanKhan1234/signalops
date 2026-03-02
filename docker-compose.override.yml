@@ -15,8 +15,6 @@ services:
       - "5432:5432"
 
   traceability-store:
-    build:
-      target: development
     volumes:
       # Hot-reload: mount source so changes take effect without rebuild
       - ./packages/traceability-store/src:/app/src:ro
@@ -28,8 +26,6 @@ services:
     # Use watchfiles/uvicorn --reload in development image target
 
   mcp-wrapper:
-    build:
-      target: development
     volumes:
       - ./packages/mcp-wrapper/src:/app/src:ro
       - ./packages/mcp-wrapper/tests:/app/tests:ro
@@ -40,8 +36,6 @@ services:
       SERPAPI_BASE_URL: ${SERPAPI_BASE_URL_DEV:-https://serpapi.com/search}
 
   agent-orchestrator:
-    build:
-      target: development
     volumes:
       - ./packages/agent-orchestrator/src:/app/src:ro
       - ./packages/agent-orchestrator/tests:/app/tests:ro
@@ -52,8 +46,6 @@ services:
       LANGCHAIN_TRACING_V2: ${LANGCHAIN_TRACING_V2:-false}
 
   web-app:
-    build:
-      target: development
     volumes:
       - ./packages/web-app/src:/app/src:ro
       - ./packages/web-app/public:/app/public:ro
