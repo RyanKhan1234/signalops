@@ -1,0 +1,89 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://signalops.io/schemas/error-response.json",
+  "title": "ErrorResponse",
+  "description": "Shared error response format used by all SignalOps services. All HTTP 4xx and 5xx responses must conform to this schema.",
+  "type": "object",
+  "required": ["error"],
+  "additionalProperties": false,
+  "properties": {
+    "error": {
+      "type": "object",
+      "required": ["code", "message"],
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "type": "string",
+          "description": "Machine-readable error code.",
+          "enum": [
+            "VALIDATION_ERROR",
+            "RATE_LIMIT_EXCEEDED",
+            "UPSTREAM_ERROR",
+            "UPSTREAM_TIMEOUT",
+            "INTERNAL_ERROR",
+            "NOT_FOUND",
+            "SERVICE_UNAVAILABLE"
+          ]
+        },
+        "message": {
+          "type": "string",
+          "description": "Human-readable description of the error."
+        },
+        "details": {
+          "type": "object",
+          "description": "Optional additional error context. For VALIDATION_ERROR, contains field-level details.",
+          "additionalProperties": true
+        },
+        "retry_after_seconds": {
+          "type": ["integer", "null"],
+          "description": "For RATE_LIMIT_EXCEEDED errors, the number of seconds to wait before retrying. Null for all other error types.",
+          "minimum": 0
+        },
+        "request_id": {
+          "type": ["string", "null"],
+          "description": "The X-Request-ID correlation ID for this request, if available."
+        }
+      }
+    }
+  },
+  "examples": [
+    {
+      "error": {
+        "code": "VALIDATION_ERROR",
+        "message": "Request validation failed",
+        "details": {
+          "field": "prompt",
+          "constraint": "minLength",
+          "received": ""
+        },
+        "retry_after_seconds": null,
+        "request_id": "550e8400-e29b-41d4-a716-446655440000"
+      }
+    },
+    {
+      "error": {
+        "code": "RATE_LIMIT_EXCEEDED",
+        "message": "Per-minute rate limit exceeded. Please retry after 45 seconds.",
+        "details": {
+          "limit_type": "per_minute",
+          "limit": 30,
+          "current_count": 31
+        },
+        "retry_after_seconds": 45,
+        "request_id": "550e8400-e29b-41d4-a716-446655440001"
+      }
+    },
+    {
+      "error": {
+        "code": "UPSTREAM_TIMEOUT",
+        "message": "The upstream news API did not respond within the timeout period.",
+        "details": {
+          "upstream": "SerpApi",
+          "timeout_seconds": 10
+        },
+        "retry_after_seconds": null,
+        "request_id": "550e8400-e29b-41d4-a716-446655440002"
+      }
+    }
+  ]
+}

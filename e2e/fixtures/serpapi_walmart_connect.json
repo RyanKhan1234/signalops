@@ -1,0 +1,54 @@
+{
+  "search_metadata": {
+    "id": "fixture_walmart_connect_001",
+    "status": "Success",
+    "json_endpoint": "https://serpapi.com/searches/fixture_walmart_connect_001.json",
+    "created_at": "2026-02-28 11:58:12 UTC",
+    "processed_at": "2026-02-28 11:58:12 UTC",
+    "google_url": "https://www.google.com/search?q=Walmart+Connect&tbm=nws&tbs=qdr:w&num=10&gl=us",
+    "raw_html_file": "",
+    "total_time_taken": 1.24
+  },
+  "search_parameters": {
+    "engine": "google_news",
+    "q": "Walmart Connect",
+    "google_domain": "google.com",
+    "gl": "us",
+    "hl": "en",
+    "tbm": "nws",
+    "tbs": "qdr:w",
+    "num": "10"
+  },
+  "search_information": {
+    "total_results": 47
+  },
+  "news_results": [
+    {
+      "position": 1,
+      "title": "Walmart Connect Lowers Barrier to Entry with Self-Serve Expansion",
+      "link": "https://www.adexchanger.com/retail-media/walmart-connect-self-serve-expansion-2026",
+      "source": "AdExchanger",
+      "date": "3 days ago",
+      "snippet": "Walmart Connect announced today that it is reducing the minimum monthly spend for its self-serve advertising platform from $50,000 to $5,000, opening the platform to thousands of mid-market brands.",
+      "thumbnail": "https://example.com/images/walmart-connect.jpg"
+    },
+    {
+      "position": 2,
+      "title": "Walmart Connect Opens API to Programmatic Buyers",
+      "link": "https://www.marketingweek.com/walmart-connect-dsp-api-partnerships",
+      "source": "Marketing Week",
+      "date": "5 days ago",
+      "snippet": "Three major demand-side platforms have signed API partnership agreements with Walmart Connect, enabling programmatic buyers to access Walmart's proprietary shopper data for audience targeting.",
+      "thumbnail": null
+    },
+    {
+      "position": 3,
+      "title": "Retail Media Networks: Walmart Connect Q1 2026 Preview",
+      "link": "https://www.retaildive.com/news/retail-media-walmart-connect-q1-2026-preview",
+      "source": "Retail Dive",
+      "date": "6 days ago",
+      "snippet": "Industry analysts preview Walmart Connect's expected Q1 2026 performance as retail media spending continues to grow at 22% YoY.",
+      "thumbnail": null
+    }
+  ]
+}

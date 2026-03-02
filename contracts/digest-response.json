@@ -1,0 +1,248 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://signalops.io/schemas/digest-response.json",
+  "title": "DigestResponse",
+  "description": "Structured competitive intelligence digest returned by the Agent Orchestrator.",
+  "type": "object",
+  "required": [
+    "digest_type",
+    "query",
+    "generated_at",
+    "report_id",
+    "executive_summary",
+    "key_signals",
+    "risks",
+    "opportunities",
+    "action_items",
+    "sources",
+    "tool_trace"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "digest_type": {
+      "type": "string",
+      "description": "Classified intent type for this digest.",
+      "enum": ["daily_digest", "weekly_report", "risk_alert", "competitor_monitor"]
+    },
+    "query": {
+      "type": "string",
+      "description": "The original user prompt that generated this digest.",
+      "minLength": 1
+    },
+    "generated_at": {
+      "type": "string",
+      "description": "ISO 8601 UTC timestamp of when this digest was generated.",
+      "format": "date-time",
+      "examples": ["2026-03-01T12:00:00Z"]
+    },
+    "report_id": {
+      "type": "string",
+      "description": "Unique identifier for this report, used to look up traceability data.",
+      "pattern": "^rpt_[a-zA-Z0-9]+$",
+      "examples": ["rpt_abc123"]
+    },
+    "executive_summary": {
+      "type": "string",
+      "description": "2-3 sentence overview of the most important findings. If no articles found, this will state so explicitly."
+    },
+    "key_signals": {
+      "type": "array",
+      "description": "Ranked list of notable events or signals detected from source articles.",
+      "items": {
+        "$ref": "#/definitions/KeySignal"
+      }
+    },
+    "risks": {
+      "type": "array",
+      "description": "Identified competitive threats or risks with severity ratings.",
+      "items": {
+        "$ref": "#/definitions/Risk"
+      }
+    },
+    "opportunities": {
+      "type": "array",
+      "description": "Identified strategic openings or opportunities with confidence levels.",
+      "items": {
+        "$ref": "#/definitions/Opportunity"
+      }
+    },
+    "action_items": {
+      "type": "array",
+      "description": "Prioritized recommended actions for the ops team.",
+      "items": {
+        "$ref": "#/definitions/ActionItem"
+      }
+    },
+    "sources": {
+      "type": "array",
+      "description": "All source articles referenced in this digest. Every URL in key_signals, risks, and opportunities MUST appear here.",
+      "items": {
+        "$ref": "#/definitions/Source"
+      }
+    },
+    "tool_trace": {
+      "type": "array",
+      "description": "Ordered list of MCP tool calls made to generate this digest, for audit and debugging.",
+      "items": {
+        "$ref": "#/definitions/ToolTraceEntry"
+      }
+    }
+  },
+  "definitions": {
+    "KeySignal": {
+      "type": "object",
+      "required": ["signal", "source_url", "source_title", "published_date", "relevance"],
+      "additionalProperties": false,
+      "properties": {
+        "signal": {
+          "type": "string",
+          "description": "Description of what happened and why it matters."
+        },
+        "source_url": {
+          "type": "string",
+          "description": "URL of the source article supporting this signal.",
+          "format": "uri"
+        },
+        "source_title": {
+          "type": "string",
+          "description": "Title of the source article."
+        },
+        "published_date": {
+          "type": "string",
+          "description": "Publication date of the source article in ISO 8601 format.",
+          "format": "date-time"
+        },
+        "relevance": {
+          "type": "string",
+          "description": "Assessed relevance of this signal.",
+          "enum": ["high", "medium", "low"]
+        }
+      }
+    },
+    "Risk": {
+      "type": "object",
+      "required": ["description", "severity", "source_urls"],
+      "additionalProperties": false,
+      "properties": {
+        "description": {
+          "type": "string",
+          "description": "Description of the competitive threat or risk."
+        },
+        "severity": {
+          "type": "string",
+          "description": "Assessed severity of this risk.",
+          "enum": ["high", "medium", "low"]
+        },
+        "source_urls": {
+          "type": "array",
+          "description": "URLs of source articles that support this risk assessment. Must be non-empty.",
+          "items": {
+            "type": "string",
+            "format": "uri"
+          },
+          "minItems": 1
+        }
+      }
+    },
+    "Opportunity": {
+      "type": "object",
+      "required": ["description", "confidence", "source_urls"],
+      "additionalProperties": false,
+      "properties": {
+        "description": {
+          "type": "string",
+          "description": "Description of the strategic opportunity."
+        },
+        "confidence": {
+          "type": "string",
+          "description": "Confidence level in this opportunity assessment.",
+          "enum": ["high", "medium", "low"]
+        },
+        "source_urls": {
+          "type": "array",
+          "description": "URLs of source articles that support this opportunity assessment. Must be non-empty.",
+          "items": {
+            "type": "string",
+            "format": "uri"
+          },
+          "minItems": 1
+        }
+      }
+    },
+    "ActionItem": {
+      "type": "object",
+      "required": ["action", "priority", "rationale"],
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "type": "string",
+          "description": "Recommended action for the ops team."
+        },
+        "priority": {
+          "type": "string",
+          "description": "P0 = act now (today), P1 = this week, P2 = track and monitor.",
+          "enum": ["P0", "P1", "P2"]
+        },
+        "rationale": {
+          "type": "string",
+          "description": "Explanation of why this action is recommended."
+        }
+      }
+    },
+    "Source": {
+      "type": "object",
+      "required": ["url", "title", "published_date", "snippet"],
+      "additionalProperties": false,
+      "properties": {
+        "url": {
+          "type": "string",
+          "description": "URL of the source article.",
+          "format": "uri"
+        },
+        "title": {
+          "type": "string",
+          "description": "Title of the source article."
+        },
+        "published_date": {
+          "type": "string",
+          "description": "Publication date of the source article in ISO 8601 format.",
+          "format": "date-time"
+        },
+        "snippet": {
+          "type": "string",
+          "description": "Short excerpt from the source article."
+        }
+      }
+    },
+    "ToolTraceEntry": {
+      "type": "object",
+      "required": ["tool_name", "input", "output_summary", "latency_ms", "timestamp"],
+      "additionalProperties": false,
+      "properties": {
+        "tool_name": {
+          "type": "string",
+          "description": "Name of the MCP tool called.",
+          "enum": ["search_news", "search_company_news", "get_article_metadata"]
+        },
+        "input": {
+          "type": "object",
+          "description": "Input parameters passed to the tool."
+        },
+        "output_summary": {
+          "type": "string",
+          "description": "Human-readable summary of what the tool returned (not the full raw output)."
+        },
+        "latency_ms": {
+          "type": "integer",
+          "description": "Time taken for this tool call in milliseconds.",
+          "minimum": 0
+        },
+        "timestamp": {
+          "type": "string",
+          "description": "ISO 8601 UTC timestamp when this tool call was made.",
+          "format": "date-time"
+        }
+      }
+    }
+  }
+}
