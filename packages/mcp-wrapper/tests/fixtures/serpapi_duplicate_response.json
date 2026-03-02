@@ -1,0 +1,41 @@
+{
+  "search_parameters": {
+    "engine": "google_news",
+    "q": "duplicate test",
+    "tbm": "nws",
+    "tbs": "qdr:w",
+    "num": "10",
+    "gl": "us"
+  },
+  "search_information": {
+    "total_results": "2",
+    "time_taken_displayed": 0.19,
+    "query_displayed": "duplicate test"
+  },
+  "news_results": [
+    {
+      "title": "Article A",
+      "link": "https://example.com/article-a",
+      "source": "Source A",
+      "date": "1 hour ago",
+      "snippet": "First occurrence of article A.",
+      "thumbnail": null
+    },
+    {
+      "title": "Article A (duplicate)",
+      "link": "https://example.com/article-a",
+      "source": "Source A",
+      "date": "1 hour ago",
+      "snippet": "Second occurrence of article A — should be deduplicated.",
+      "thumbnail": null
+    },
+    {
+      "title": "Article B",
+      "link": "https://example.com/article-b",
+      "source": "Source B",
+      "date": "2 hours ago",
+      "snippet": "Article B — unique.",
+      "thumbnail": null
+    }
+  ]
+}

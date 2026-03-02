@@ -1,0 +1,24 @@
+{
+  "search_parameters": {
+    "engine": "google_news",
+    "q": "https://www.retaildive.com/news/walmart-connect-self-serve-smb/123456/",
+    "tbm": "nws",
+    "num": "3",
+    "gl": "us"
+  },
+  "search_information": {
+    "total_results": "1",
+    "time_taken_displayed": 0.31,
+    "query_displayed": "https://www.retaildive.com/news/walmart-connect-self-serve-smb/123456/"
+  },
+  "news_results": [
+    {
+      "title": "Walmart Connect Expands Self-Serve Ad Platform for SMBs",
+      "link": "https://www.retaildive.com/news/walmart-connect-self-serve-smb/123456/",
+      "source": "Retail Dive",
+      "date": "Mar 01, 2026",
+      "snippet": "Walmart Connect announced the expansion of its self-serve advertising platform, giving small and medium-sized businesses access to sponsored search placements across Walmart.com.",
+      "thumbnail": "https://example.com/thumb1.jpg"
+    }
+  ]
+}
