@@ -164,6 +164,30 @@ export interface ApiError {
 }
 
 /**
+ * Lightweight summary of a stored digest report, returned in list responses.
+ * The full digest_json is omitted; use getReportById to fetch the full report.
+ */
+export interface ReportSummary {
+  id: string;
+  report_id: string;
+  digest_type: DigestType;
+  query: string;
+  user_id: string | null;
+  generated_at: string; // ISO 8601
+  created_at: string;
+}
+
+/**
+ * Paginated list of report summaries returned by GET /history/api/reports.
+ */
+export interface PaginatedReports {
+  items: ReportSummary[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+/**
  * A message in the chat thread.
  */
 export interface ChatMessage {
