@@ -1,0 +1,137 @@
+[
+  {
+    "testId": "T1",
+    "description": "Daily digest for Walmart Connect",
+    "prompt": "Daily digest for Walmart Connect",
+    "status": "PASS",
+    "observations": [
+      "digest_type is shown in UI",
+      "Key signals section visible",
+      "Executive summary present",
+      "Digest content successfully rendered with meaningful sections"
+    ],
+    "screenshots": [
+      "C:\\Users\\ryank\\OneDrive\\Documents\\signalops-worktrees\\qa-tester\\qa-screenshots\\T1-before.png",
+      "C:\\Users\\ryank\\OneDrive\\Documents\\signalops-worktrees\\qa-tester\\qa-screenshots\\T1-after.png"
+    ],
+    "bugs": [],
+    "error": null,
+    "pageTextSample": "SignalOps\n\nCompetitive Intelligence\n\nClear\n\nDaily digest for Walmart Connect\n\n01:15 PM\nSignalOps\n01:17 PM\nExecutive Summary\n\nQuery: \"Daily digest for Walmart Connect\"\n\nDaily Digest\nGenerated Mar 2, 2026, 1:17 PM\n|\nrpt_8bbf74c8411d\n\nWalmart Connect is scaling rapidly toward ~$6.4B in revenue with 31-53% quarterly growth, now contributing nearly a third of Walmart's total profit, while aggressively expanding into CTV advertising through partnerships with NBCU, Disney, Roku, and the conversion of its Vizio acquisition into a private-label brand that deepens its connected TV and retail media capabilities. The unit is simultaneously embedding AI across its ecosystem—including ads within its gen AI shopping assistant Sparky and an agentic advertiser tool built with OpenAI—while expanding internationally through new partnerships in Mexico for in-store audience measurement and omnichannel attribution. However, a notable risk is emerging as Walmart pushes brands to increase ad spend by at least 25% despite reported sales stagnation, triggering advertiser pushback that could threaten trust and the long-term growth trajectory of this high-margin profit engine.\n\nKey Signals\n7\n\nNotable events and developments extracted from source articles\n\n1\n\nWalmart Connect's ad business is rapidly scaling toward ~$6.4B in revenue with growth rates (31-53% quarterly) far outpacing core retail sales, now contributing nearly a third of Walmart's total profit and emerging as a high-margin profit engine that provides strategic flexibility against macro headwinds like tariffs.\n\nRelevance:\nHigh\nAlmost a third of Walmart’s profit now comes from selling ads\nToday\n2\n\nWalmart Connect is aggressively expanding its retail media network into CTV and streaming through major partnerships with NBCU, Disney, Vizio, and Roku, leveraging its first-party shopper data and Vizio's CTV inventory to enable closed-loop attribution and shoppable ad experiences—positioning Walmart as a dominant force at the convergence "
+  },
+  {
+    "testId": "T2",
+    "description": "Weekly report on Amazon Advertising - expects signals and tool trace",
+    "prompt": "Weekly report on Amazon Advertising",
+    "status": "PASS",
+    "observations": [
+      "Key signals visible",
+      "Tool trace visible"
+    ],
+    "screenshots": [
+      "C:\\Users\\ryank\\OneDrive\\Documents\\signalops-worktrees\\qa-tester\\qa-screenshots\\T2-before.png",
+      "C:\\Users\\ryank\\OneDrive\\Documents\\signalops-worktrees\\qa-tester\\qa-screenshots\\T2-after.png"
+    ],
+    "bugs": [],
+    "error": null,
+    "pageTextSample": "SignalOps\n\nCompetitive Intelligence\n\nClear\n\nWeekly report on Amazon Advertising\n\n01:17 PM\nSignalOps\n01:19 PM\nExecutive Summary\n\nQuery: \"Weekly report on Amazon Advertising\"\n\nWeekly Report\nGenerated Mar 2, 2026, 1:19 PM\n|\nrpt_eb6aa8c726d8\n\nAmazon Advertising is executing a sweeping competitive offensive on multiple fronts: its ad revenue hit $21.3B in Q1 (up 22-24% YoY), making it the fastest-growing major ad platform, while it simultaneously launches a full AI-powered advertising stack—including Creative Agent, an MCP Server for agentic campaign management, and expanded Marketing Cloud access—that could disintermediate traditional agencies and rival platforms. The company is rapidly consolidating its DSP as the central programmatic hub through landmark integrations with Netflix, Disney, Samsung, iHeartMedia, and others across CTV, audio, and retail media, while Prime Video's 315M ad-supported viewers and new interactive ad formats demonstrate measurable brand lift. Meanwhile, Amazon's AI shopping assistant Rufus has already driven $12B in sales in 2025, signaling that AI-powered commerce is emerging as a potent new advertising channel that competitors Google and Meta must urgently counter.\n\nKey Signals\n7\n\nNotable events and developments extracted from source articles\n\n1\n\nAmazon Ads is aggressively building an end-to-end AI-powered advertising stack—launching 'Creative Agent' for automated ad creation, an MCP Server for AI-managed campaign execution, and opening its APIs to agentic AI—positioning itself to become the central hub of the advertising workflow and potentially disintermediating traditional agencies and competing ad platforms.\n\nRelevance:\nHigh\nAmazon’s Ads Agent Is Here, Alongside a New Ads Interface\nToday\n2\n\nAmazon Ads is aggressively expanding its DSP and ad ecosystem through a rapid succession of high-profile integrations with Netflix, Disney, Samsung, SiriusXM, iHeartMedia, Macy's, Adobe, and Nielsen—positioning Amazon DSP as the central programmatic h"
+  },
+  {
+    "testId": "T3",
+    "description": "Risk alert - risks section must be visible and non-empty",
+    "prompt": "Risk alert for Target retail media",
+    "status": "PASS",
+    "observations": [
+      "Risks section visible and present"
+    ],
+    "screenshots": [
+      "C:\\Users\\ryank\\OneDrive\\Documents\\signalops-worktrees\\qa-tester\\qa-screenshots\\T3-before.png",
+      "C:\\Users\\ryank\\OneDrive\\Documents\\signalops-worktrees\\qa-tester\\qa-screenshots\\T3-after.png"
+    ],
+    "bugs": [],
+    "error": null,
+    "pageTextSample": "SignalOps\n\nCompetitive Intelligence\n\nClear\n\nRisk alert for Target retail media\n\n01:19 PM\nSignalOps\n01:21 PM\nExecutive Summary\n\nQuery: \"Risk alert for Target retail media\"\n\nRisk Alert\nGenerated Mar 2, 2026, 1:20 PM\n|\nrpt_2f9c6632ede6\n\nTarget's retail media business faces elevated risk from the rapid expansion of China-backed e-commerce platforms like Temu, Shein, and TikTok Shop, which are aggressively competing for U.S. consumer attention and ad dollars, potentially diverting brand advertising spend away from incumbent retail media networks. Simultaneously, Trump administration tariffs are creating broad supply chain disruption across consumer goods sectors, which could squeeze supplier marketing budgets and reduce retail media investment as brands like Nike and others navigate rising costs.\n\nKey Signals\n6\n\nNotable events and developments extracted from source articles\n\n1\n\nNvidia faces mounting competitive threats from Broadcom's custom AI chips and AMD's GPU wins (e.g., OpenAI purchasing AMD GPUs), prompting rare Wall Street price target cuts and raising concerns about Nvidia's AI chip dominance eroding.\n\nRelevance:\nHigh\nNvidia Shares Climb Despite Citi Trims Target on Broadcom AI Threat\nToday\n2\n\nChina-backed e-commerce platforms (Temu, Shein, TikTok Shop) are emerging as major competitive threats to established retailers across multiple global markets—Australia, Southeast Asia, South Africa, and the U.S.—forcing incumbents to pursue defensive expansions and prompting policy scrutiny over consumer protection and technology leadership.\n\nRelevance:\nHigh\nHow China’s State-Backed E-Commerce Platforms Threaten American Consumers and U.S. Technology Leadership\nToday\n3\n\nAccenture is executing an aggressive multi-region cybersecurity acquisition strategy—targeting CyberCX (Asia Pacific), IAMConcepts (Canada), and Morphus (Brazil)—to rapidly scale its global cybersecurity capabilities amid a projected $2 trillion market opportunity.\n\nRelevance:\nHigh\nAccenture to Acquire Cyb"
+  },
+  {
+    "testId": "T4",
+    "description": "Competitor monitor intent - content renders with competitor data",
+    "prompt": "Who are the emerging competitors in retail media",
+    "status": "PASS",
+    "observations": [
+      "Competitor-related content present in response",
+      "Content rendered successfully"
+    ],
+    "screenshots": [
+      "C:\\Users\\ryank\\OneDrive\\Documents\\signalops-worktrees\\qa-tester\\qa-screenshots\\T4-before.png",
+      "C:\\Users\\ryank\\OneDrive\\Documents\\signalops-worktrees\\qa-tester\\qa-screenshots\\T4-after.png"
+    ],
+    "bugs": [],
+    "error": null,
+    "pageTextSample": "SignalOps\n\nCompetitive Intelligence\n\nClear\n\nWho are the emerging competitors in retail media\n\n01:21 PM\nSignalOps\n01:22 PM\nExecutive Summary\n\nQuery: \"Who are the emerging competitors in retail media\"\n\nCompetitor Monitor\nGenerated Mar 2, 2026, 1:22 PM\n|\nrpt_0b320a8fbdf5\n\nThe retail media networks market is projected to reach USD 7.3 billion by 2034 at a 20% CAGR, with Criteo facing intensifying competitive pressure from rivals seeking to capture share, while the digital advertising triopoly of Google, Meta, and Amazon continues to gain overall market share even as emerging adtech startups challenge their dominance in niche segments. Major consulting firms are signaling structural shifts in retail for 2026, requiring retailers to rethink strategies around digital marketplaces and rapid delivery, which will likely spawn new retail media entrants and reshape competitive dynamics. Additionally, the explosive growth of the alternative data market (51.5% CAGR) points to emerging data-driven competitors that could fundamentally alter how retail media targeting and intelligence capabilities are deployed.\n\nKey Signals\n6\n\nNotable events and developments extracted from source articles\n\n1\n\nThe global retail media networks market is projected to reach USD 7.3 billion by 2034 at a 20% CAGR, while Criteo faces intensifying competitive pressure from rivals seeking to capture share in this rapidly expanding channel, and potential Robinson-Patman Act legal scrutiny could disrupt the sector's growth trajectory.\n\nRelevance:\nHigh\nEXCLUSIVE: Criteo Is Holding Its Ground as Retail Media Rivals Try to Steal Its Share\nToday\n2\n\nThe digital advertising triopoly (Google, Meta, Amazon) is gaining overall market share even as new competitors and emerging adtech startups challenge their dominance, signaling increasing concentration at the top of the ad market alongside growing niche competition.\n\nRelevance:\nHigh\nDigital advertising triopoly gains overall market share while facing competition\nToday\n"
+  },
+  {
+    "testId": "T5",
+    "description": "Empty submit - should show validation error or graceful state, must not crash",
+    "prompt": "",
+    "status": "FAIL",
+    "observations": [
+      "Exception: locator.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('button[aria-label=\"Submit digest request\"]')\u001b[22m\n\u001b[2m    - locator resolved to <button disabled type=\"submit\" aria-label=\"Submit digest request\" class=\"flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2\">…</button>\u001b[22m\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is not enabled\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m    - waiting 20ms\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is not enabled\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m      - waiting 100ms\u001b[22m\n\u001b[2m    57 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m       - element is not enabled\u001b[22m\n\u001b[2m     - retrying click action\u001b[22m\n\u001b[2m       - waiting 500ms\u001b[22m\n"
+    ],
+    "screenshots": [
+      "C:\\Users\\ryank\\OneDrive\\Documents\\signalops-worktrees\\qa-tester\\qa-screenshots\\T5-before.png",
+      "C:\\Users\\ryank\\OneDrive\\Documents\\signalops-worktrees\\qa-tester\\qa-screenshots\\T5-error.png"
+    ],
+    "bugs": [],
+    "error": "locator.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('button[aria-label=\"Submit digest request\"]')\u001b[22m\n\u001b[2m    - locator resolved to <button disabled type=\"submit\" aria-label=\"Submit digest request\" class=\"flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2\">…</button>\u001b[22m\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is not enabled\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m    - waiting 20ms\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is not enabled\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m      - waiting 100ms\u001b[22m\n\u001b[2m    57 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m       - element is not enabled\u001b[22m\n\u001b[2m     - retrying click action\u001b[22m\n\u001b[2m       - waiting 500ms\u001b[22m\n"
+  },
+  {
+    "testId": "T6",
+    "description": "Latest news intent - content renders",
+    "prompt": "Latest news for Google",
+    "status": "PASS",
+    "observations": [
+      "Content rendered for Google news query",
+      "Digest type shown - likely daily/latest intent"
+    ],
+    "screenshots": [
+      "C:\\Users\\ryank\\OneDrive\\Documents\\signalops-worktrees\\qa-tester\\qa-screenshots\\T6-before.png",
+      "C:\\Users\\ryank\\OneDrive\\Documents\\signalops-worktrees\\qa-tester\\qa-screenshots\\T6-after.png"
+    ],
+    "bugs": [],
+    "error": null,
+    "pageTextSample": "SignalOps\n\nCompetitive Intelligence\n\nClear\n\nLatest news for Google\n\n01:23 PM\nSignalOps\n01:25 PM\nExecutive Summary\n\nQuery: \"Latest news for Google\"\n\nDaily Digest\nGenerated Mar 2, 2026, 1:24 PM\n|\nrpt_c8a98bfa2d41\n\nGoogle is making sweeping strategic moves across multiple fronts, most notably a potentially $1 trillion+ data center buildout funded partly through an unprecedented 100-year bond, underscoring the scale of its long-term AI infrastructure commitment. The company is aggressively embedding AI across its ecosystem—from Gemini's multi-step task automation on Android to a new Universal Commerce Protocol reshaping ecommerce data flows and an \"Android of robotics\" play through its Intrinsic division—while also pioneering quantum-resistant HTTPS certificates for Chrome. Adding to its competitive leverage, Apple is reportedly in discussions to host its revamped Siri on Google's cloud, highlighting Google's growing infrastructure dominance even among direct rivals.\n\nKey Signals\n6\n\nNotable events and developments extracted from source articles\n\n1\n\nGoogle is executing a broad AI product offensive across its ecosystem—launching Nano Banana 2 for faster image generation, expanding Gemini's multi-step task automation on Android, releasing an ADK integrations ecosystem for AI agents, and enhancing Translate with AI context—signaling an aggressive push to embed AI deeply across consumer and developer surfaces.\n\nRelevance:\nHigh\nLet Gemini handle your multi-step daily tasks on Android.\nToday\n2\n\nGoogle has launched and documented its Universal Commerce Protocol, a new standard that restructures how ecommerce product data flows into Google's ecosystem, fundamentally changing ecommerce SEO and potentially reshaping how merchants connect with Google Shopping and search surfaces.\n\nRelevance:\nHigh\nGoogle publishes Universal Commerce Protocol help page\nToday\n3\n\nGoogle is developing Merkle Tree Certificates to make HTTPS quantum-resistant in Chrome, compressing post-quantum certificat"
+  },
+  {
+    "testId": "T7",
+    "description": "Simple entity without intent keyword - graceful fallback with some content",
+    "prompt": "Walmart Connect",
+    "status": "PASS",
+    "observations": [
+      "Content rendered - graceful fallback for simple entity prompt",
+      "Graceful fallback - app handled simple entity prompt"
+    ],
+    "screenshots": [
+      "C:\\Users\\ryank\\OneDrive\\Documents\\signalops-worktrees\\qa-tester\\qa-screenshots\\T7-before.png",
+      "C:\\Users\\ryank\\OneDrive\\Documents\\signalops-worktrees\\qa-tester\\qa-screenshots\\T7-after.png"
+    ],
+    "bugs": [],
+    "error": null,
+    "pageTextSample": "SignalOps\n\nCompetitive Intelligence\n\nClear\n\nWalmart Connect\n\n01:25 PM\nSignalOps\n01:26 PM\nExecutive Summary\n\nQuery: \"Walmart Connect\"\n\nCompetitor Monitor\nGenerated Mar 2, 2026, 1:26 PM\n|\nrpt_f24ac941539e\n\nWalmart Connect is significantly strengthening its competitive position as ad buyers increasingly invest in its retail media business, stepping out of Amazon's shadow following the Vizio acquisition closure, in a market projected to reach $7.3B by 2034 at 20% CAGR. This momentum is reinforced by Walmart's broader gains in attracting affluent shoppers and expanding grocery market share through AI and automation investments, widening its lead over rivals. Meanwhile, potential partner The Trade Desk faces stock declines amid growth concerns and intensifying programmatic advertising competition, which could create both risks and opportunities for Walmart Connect's demand-side partnerships.\n\nKey Signals\n6\n\nNotable events and developments extracted from source articles\n\n1\n\nWalmart is attracting affluent shoppers and rapidly gaining grocery market share while investing in AI and automation, widening its competitive lead over other discount and grocery retailers who are struggling to keep pace.\n\nRelevance:\nHigh\nThe Great Upscale: Walmart Prepares for Q4 2026 Reveal as Affluent Shift Reshapes Retail Dominance\nToday\n2\n\nWalmart is aggressively expanding its retail media capabilities—closing its Vizio acquisition and attracting increased ad buyer investment—positioning itself as the primary challenger to Amazon's dominance in the rapidly growing retail media networks market (projected to reach $7.3B by 2034 at 20% CAGR).\n\nRelevance:\nHigh\nAd buyers double down on Walmart's retail media business as it steps out of Amazon's shadow\nToday\n3\n\nThe Trade Desk is experiencing a significant stock decline driven by growth concerns and intensifying competition in the programmatic advertising space, signaling potential shifts in competitive positioning among ad-tech platforms.\n\nRelevance:\nH"
+  },
+  {
+    "testId": "T8",
+    "description": "Re-submit T1 prompt - result should still show (not blank/error)",
+    "prompt": "Daily digest for Walmart Connect",
+    "status": "PASS",
+    "observations": [
+      "Content rendered on re-submission - not blank or error",
+      "Re-submission handled correctly - result visible"
+    ],
+    "screenshots": [
+      "C:\\Users\\ryank\\OneDrive\\Documents\\signalops-worktrees\\qa-tester\\qa-screenshots\\T8-before.png",
+      "C:\\Users\\ryank\\OneDrive\\Documents\\signalops-worktrees\\qa-tester\\qa-screenshots\\T8-after.png"
+    ],
+    "bugs": [],
+    "error": null,
+    "pageTextSample": "SignalOps\n\nCompetitive Intelligence\n\nClear\n\nDaily digest for Walmart Connect\n\n01:26 PM\nSignalOps\n01:27 PM\nExecutive Summary\n\nQuery: \"Daily digest for Walmart Connect\"\n\nDaily Digest\nGenerated Mar 2, 2026, 1:27 PM\n|\nrpt_56edf837ea4a\n\nWalmart Connect is rapidly scaling toward ~$6.4B in revenue with 31-53% quarterly growth, now contributing nearly a third of Walmart's total profit, while simultaneously expanding aggressively into CTV through major partnerships with Disney, NBCU, Vizio, and Roku for closed-loop attribution and shoppable ads. The division is also integrating AI agents across its advertising ecosystem—including ads within its gen AI shopping assistant and an agentic advertiser tool—while pushing international expansion in Mexico with AI-powered in-store measurement. However, tensions are emerging as Walmart pressures brands to increase ad spend by at least 25% amid reported sales stagnation, risking advertiser trust at a critical growth inflection point, while broader corporate layoffs of 1,500 workers signal an aggressive pivot toward automation and AI-driven operations.\n\nKey Signals\n7\n\nNotable events and developments extracted from source articles\n\n1\n\nWalmart Connect's ad business is rapidly scaling toward ~$6.4B in revenue with growth rates (31-53% quarterly) far outpacing core retail sales, now contributing nearly a third of Walmart's total profit and emerging as a high-margin profit engine that provides strategic flexibility against macroeconomic headwinds like tariffs.\n\nRelevance:\nHigh\nWalmart Connect hits 41% growth as ad business nears $6.4B\nToday\n2\n\nWalmart Connect is aggressively expanding its retail media network into CTV through multiple simultaneous partnerships—NBCU for live sports data integration, Disney for closed-loop streaming attribution, Vizio for shoppable TV ads, and Roku/TikTok/Snapchat for closed-loop measurement—positioning Walmart as the dominant bridge between retail purchase data and premium video advertising.\n\nRelevance:\nHigh\n"
+  }
+]
