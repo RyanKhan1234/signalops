@@ -5,7 +5,6 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { ChatInput } from '../chat/ChatInput';
 
 interface QueryBarProps {
