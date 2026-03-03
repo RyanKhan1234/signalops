@@ -223,7 +223,7 @@ function App() {
 
       {/* Query bar — shown in digest view when digest is loaded */}
       {currentView === 'digest' && latestDigest && (
-        <QueryBar onSubmit={submitPrompt} isLoading={isLoading} />
+        <QueryBar onClear={clearMessages} isLoading={isLoading} />
       )}
 
       {/* Debug panel — only shown when there is a digest response */}
