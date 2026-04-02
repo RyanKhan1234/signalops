@@ -12,8 +12,8 @@ class DigestRequest(BaseModel):
         ...,
         min_length=1,
         max_length=2000,
-        description="Natural language prompt describing the competitive intelligence query",
-        examples=["Anything important about Walmart Connect this week?"],
+        description="Natural language research prompt — any topic, company, or question",
+        examples=["What's new in AI model releases this week?"],
     )
 
 

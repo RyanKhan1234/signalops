@@ -44,7 +44,7 @@ def _extract_json(text: str) -> str:
 # Prompt templates
 # ---------------------------------------------------------------------------
 
-CLUSTERING_PROMPT = """You are a competitive intelligence analyst. Given a list of news article titles and snippets,
+CLUSTERING_PROMPT = """You are a research analyst. Given a list of news article titles and snippets,
 group them into thematic clusters. Return ONLY valid JSON — no preamble, no markdown.
 
 Output format:
@@ -60,36 +60,36 @@ Output format:
 Rules:
 - Create 2-6 clusters maximum
 - Every article must belong to exactly one cluster
-- Use business-meaningful themes (e.g., "Ad Platform Updates", "Partnership Announcements", "Pricing Changes")
+- Use descriptive themes based on what the articles are actually about (e.g., "Model Releases", "Regulatory Developments", "Industry Reactions")
 - If there are fewer than 3 articles, create one cluster called "General News"
 
 Articles:
 {articles_json}"""
 
-SIGNAL_EXTRACTION_PROMPT = """You are a competitive intelligence analyst. Given a theme and a set of article titles
-and snippets grouped under that theme, extract the single most important business signal.
+SIGNAL_EXTRACTION_PROMPT = """You are a research analyst. Given a theme and a set of article titles
+and snippets grouped under that theme, extract the single most important signal or development.
 
 Return ONLY valid JSON — no preamble, no markdown.
 
 Output format:
 {
-  "signal": "<1-2 sentence business-impact summary of what happened and why it matters>",
+  "signal": "<1-2 sentence summary of what happened and why it matters>",
   "relevance": "<high|medium|low>",
   "best_article_index": <0-based index of the most relevant article in this cluster>
 }
 
 Rules:
 - The signal MUST be directly supported by the article content — no extrapolation
-- relevance = high if this affects competitive positioning directly
-- relevance = medium if it provides useful context
+- relevance = high if this is a significant development worth acting on
+- relevance = medium if it provides useful context or background
 - relevance = low if it is tangentially related
 
 Theme: {theme}
 Articles:
 {articles_json}"""
 
-RISK_OPPORTUNITY_PROMPT = """You are a competitive intelligence analyst. Given a list of article signals,
-identify competitive risks and strategic opportunities.
+RISK_OPPORTUNITY_PROMPT = """You are a research analyst. Given a list of article signals,
+identify noteworthy risks or concerns and potential opportunities.
 
 Return ONLY valid JSON — no preamble, no markdown.
 
@@ -97,14 +97,14 @@ Output format:
 {
   "risks": [
     {
-      "description": "<1-2 sentence risk description>",
+      "description": "<1-2 sentence description of the risk or concern>",
       "severity": "<high|medium|low>",
       "signal_indices": [<0-based indices of signals that support this risk>]
     }
   ],
   "opportunities": [
     {
-      "description": "<1-2 sentence opportunity description>",
+      "description": "<1-2 sentence description of the opportunity>",
       "confidence": "<high|medium|low>",
       "signal_indices": [<0-based indices of signals that support this opportunity>]
     }
@@ -121,8 +121,8 @@ Rules:
 Signals:
 {signals_json}"""
 
-ACTION_ITEM_PROMPT = """You are a competitive intelligence analyst. Given a list of risks and opportunities,
-generate a prioritized list of action items for an operations team.
+ACTION_ITEM_PROMPT = """You are a research analyst. Given a list of risks and opportunities,
+generate a prioritized list of follow-up actions or things to watch.
 
 Return ONLY valid JSON — no preamble, no markdown.
 
@@ -138,14 +138,14 @@ Output format:
 }
 
 Priority definitions:
-- P0: Act now (today) — addresses an immediate competitive threat
-- P1: This week — addresses a developing situation
-- P2: Track — monitor but no immediate action needed
+- P0: Act now (today) — addresses something time-sensitive or high-stakes
+- P1: This week — addresses a developing situation worth staying on top of
+- P2: Track — worth monitoring but no immediate action needed
 
 Rules:
 - Maximum 8 action items
 - Every action must reference a specific risk or opportunity
-- Actions must be concrete and role-appropriate for RevOps, Marketing Ops, or Product Ops teams
+- Actions should be practical and relevant to someone doing personal research
 - If there are no risks or opportunities, return an empty action_items array
 
 Risks:
@@ -331,7 +331,7 @@ async def identify_risks_and_opportunities(
     signals: list[KeySignal],
     all_articles: list[Article],
 ) -> tuple[list[Risk], list[Opportunity]]:
-    """Identify competitive risks and strategic opportunities from extracted signals.
+    """Identify risks, concerns, and opportunities from extracted signals.
 
     Args:
         signals: List of extracted key signals.
@@ -433,7 +433,7 @@ async def generate_action_items(
     """Synthesize prioritized action items from risks and opportunities.
 
     Args:
-        risks: Identified competitive risks.
+        risks: Identified risks and concerns.
         opportunities: Identified strategic opportunities.
 
     Returns:

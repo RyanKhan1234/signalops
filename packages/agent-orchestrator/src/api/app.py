@@ -25,8 +25,8 @@ def create_app() -> FastAPI:
     app = FastAPI(
         title="SignalOps Agent Orchestrator",
         description=(
-            "LangChain/LangGraph-based competitive intelligence agent pipeline. "
-            "Takes natural language prompts and returns structured, source-attributed digests."
+            "LangChain/LangGraph-based personal research agent pipeline. "
+            "Takes natural language prompts and returns structured, source-attributed research digests."
         ),
         version="0.1.0",
         docs_url="/docs",

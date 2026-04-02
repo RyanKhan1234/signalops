@@ -204,7 +204,7 @@ def validate_and_sanitize(
     executive_summary = digest.executive_summary
     if not clean_signals:
         executive_summary = (
-            "No fully-attributed competitive signals were found for this query "
+            "No fully-attributed signals were found for this query "
             "in the specified time range."
         )
 

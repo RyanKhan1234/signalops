@@ -93,7 +93,7 @@ Rules:
 - Maximum 3 sentences
 - Focus on the most important business impact
 - Do NOT invent any facts — only summarize what is in the signals
-- If signals list is empty, say "No significant competitive activity was detected in the specified time range."
+- If signals list is empty, say "No significant developments were found for this query in the specified time range."
 - Output ONLY the summary text — no JSON, no quotes, no preamble
 
 Digest type: {digest_type}
@@ -188,7 +188,7 @@ async def _generate_executive_summary(
     Falls back to a safe default message if the LLM call fails.
     """
     if not signals:
-        return "No significant competitive activity was detected in the specified time range."
+        return "No significant developments were found in the specified time range."
 
     client = AsyncAnthropic(api_key=settings.anthropic_api_key)
     signals_data = [
@@ -221,7 +221,7 @@ async def _generate_executive_summary(
 def _fallback_summary(digest_type: str, signals: list[KeySignal]) -> str:
     """Build a simple fallback executive summary without LLM."""
     if not signals:
-        return "No significant competitive activity was detected in the specified time range."
+        return "No significant developments were found in the specified time range."
     top_signal = signals[0].signal
     return (
         f"This {digest_type.replace('_', ' ')} identified {len(signals)} key signal(s). "
