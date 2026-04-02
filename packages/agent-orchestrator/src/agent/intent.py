@@ -1,7 +1,7 @@
 """Intent detection and entity extraction for the Agent Orchestrator.
 
-Classifies incoming natural-language prompts into one of four digest types
-and extracts structured entities (company names, topics, time ranges).
+Classifies incoming natural-language prompts into one of four research modes
+and extracts structured entities (topics, technologies, companies, domains).
 """
 
 from __future__ import annotations
@@ -37,34 +37,34 @@ def _extract_json_from_text(text: str) -> str:
 # Prompt templates — kept in version-controlled code, not external storage
 # ---------------------------------------------------------------------------
 
-INTENT_SYSTEM_PROMPT = """You are an intent classifier for a competitive intelligence platform.
+INTENT_SYSTEM_PROMPT = """You are an intent classifier for a personal news research tool.
 
 Your job is to analyze a user's natural-language prompt and return a structured JSON object
-describing the intent and entities. You must output ONLY valid JSON — no preamble, no markdown.
+describing the research intent and topics. You must output ONLY valid JSON — no preamble, no markdown.
 
 The JSON must conform to this schema:
 {
-  "intent_type": "<daily_digest|weekly_report|risk_alert|competitor_monitor>",
-  "entities": ["<company name or topic>", ...],
+  "intent_type": "<latest_news|deep_dive|risk_scan|trend_watch>",
+  "entities": ["<topic, technology, company, or domain>", ...],
   "time_range": "<1d|7d|30d>",
   "original_query": "<the original user prompt verbatim>"
 }
 
 Intent classification rules:
-- daily_digest: keywords like "today", "this morning", "overnight", "daily", "latest", "just now"
-- weekly_report: keywords like "this week", "weekly", "past 7 days", "7 days", "week"
-- risk_alert: keywords like "risk", "threat", "concern", "watch out", "danger", "losing", "warn"
-- competitor_monitor: keywords like "new competitor", "emerging", "who else", "landscape", "rising", "new player"
+- latest_news: user wants recent headlines or quick updates — keywords like "today", "latest", "just dropped", "what's new", "this morning", "overnight", "any news"
+- deep_dive: user wants thorough, multi-angle research — keywords like "tell me everything", "deep dive", "breakdown", "this week", "past 7 days", "weekly", "comprehensive"
+- risk_scan: user wants to surface concerns, controversies, or downsides — keywords like "risk", "concern", "problem", "controversy", "backlash", "threat", "danger", "warn", "downside"
+- trend_watch: user wants to understand what's emerging or where things are heading — keywords like "trend", "emerging", "what's coming", "future", "growing", "rising", "new players", "landscape"
 
 Default time_range mapping:
-- daily_digest → "1d"
-- weekly_report → "7d"
-- risk_alert → "1d"
-- competitor_monitor → "30d"
+- latest_news → "1d"
+- deep_dive → "7d"
+- risk_scan → "7d"
+- trend_watch → "30d"
 
 Entity extraction:
-- Extract all company names, product names, industries, and specific topics mentioned
-- If no entity is explicitly named, infer from context (e.g., "retail media" is an entity)
+- Extract all topics, technologies, companies, products, industries, or domains mentioned
+- If no entity is explicitly named, infer from context (e.g., "AI safety" or "sports betting" are valid entities)
 - Always include at least one entity
 
 Do not hallucinate. Output only what is present in the prompt."""
@@ -108,7 +108,7 @@ async def detect_intent(prompt: str) -> DetectedIntent:
         parsed = json.loads(_extract_json_from_text(raw_text))
     except json.JSONDecodeError as exc:
         logger.error("Failed to parse intent JSON: %s — raw: %s", exc, raw_text)
-        # Graceful fallback: treat as weekly_report with generic entity
+        # Graceful fallback: treat as deep_dive with generic entity
         return _fallback_intent(prompt)
 
     # Validate required fields are present
@@ -120,18 +120,18 @@ async def detect_intent(prompt: str) -> DetectedIntent:
 
     # Ensure intent_type is valid
     valid_types: set[DigestType] = {
-        "daily_digest",
-        "weekly_report",
-        "risk_alert",
-        "competitor_monitor",
+        "latest_news",
+        "deep_dive",
+        "risk_scan",
+        "trend_watch",
     }
     if parsed["intent_type"] not in valid_types:
-        logger.warning("Unknown intent_type '%s' — defaulting to weekly_report", parsed["intent_type"])
-        parsed["intent_type"] = "weekly_report"
+        logger.warning("Unknown intent_type '%s' — defaulting to deep_dive", parsed["intent_type"])
+        parsed["intent_type"] = "deep_dive"
 
     # Ensure entities is a non-empty list
     if not parsed.get("entities"):
-        parsed["entities"] = ["general competitive intelligence"]
+        parsed["entities"] = ["general research"]
 
     return DetectedIntent(
         intent_type=parsed["intent_type"],
@@ -144,8 +144,8 @@ async def detect_intent(prompt: str) -> DetectedIntent:
 def _fallback_intent(prompt: str) -> DetectedIntent:
     """Return a safe fallback intent when LLM response cannot be parsed."""
     return DetectedIntent(
-        intent_type="weekly_report",
-        entities=["general competitive intelligence"],
+        intent_type="deep_dive",
+        entities=["general research"],
         time_range="7d",
         original_query=prompt,
     )
@@ -165,21 +165,21 @@ def detect_intent_heuristic(prompt: str) -> DetectedIntent:
     """
     prompt_lower = prompt.lower()
 
-    # Determine intent type
-    if any(kw in prompt_lower for kw in ["risk", "threat", "concern", "watch out", "danger", "warn"]):
-        intent_type: DigestType = "risk_alert"
-        time_range = "1d"
-    elif any(kw in prompt_lower for kw in ["new competitor", "emerging", "who else", "landscape", "rising"]):
-        intent_type = "competitor_monitor"
-        time_range = "30d"
-    elif any(kw in prompt_lower for kw in ["this week", "weekly", "past 7 days", "7 days"]):
-        intent_type = "weekly_report"
+    # Determine intent type — checked in priority order
+    if any(kw in prompt_lower for kw in ["risk", "threat", "concern", "watch out", "danger", "warn", "controversy", "backlash", "downside"]):
+        intent_type: DigestType = "risk_scan"
         time_range = "7d"
-    elif any(kw in prompt_lower for kw in ["today", "this morning", "overnight", "daily", "latest"]):
-        intent_type = "daily_digest"
+    elif any(kw in prompt_lower for kw in ["trend", "emerging", "who else", "landscape", "rising", "future", "what's coming", "new players"]):
+        intent_type = "trend_watch"
+        time_range = "30d"
+    elif any(kw in prompt_lower for kw in ["tell me everything", "deep dive", "breakdown", "this week", "weekly", "past 7 days", "7 days", "comprehensive"]):
+        intent_type = "deep_dive"
+        time_range = "7d"
+    elif any(kw in prompt_lower for kw in ["today", "this morning", "overnight", "latest", "just dropped", "any news", "what's new"]):
+        intent_type = "latest_news"
         time_range = "1d"
     else:
-        intent_type = "weekly_report"
+        intent_type = "deep_dive"
         time_range = "7d"
 
     # Simple entity extraction: capitalized words and quoted strings
@@ -187,7 +187,7 @@ def detect_intent_heuristic(prompt: str) -> DetectedIntent:
     # Extract quoted phrases
     quoted = re.findall(r'"([^"]+)"', prompt)
     entities.extend(quoted)
-    # Extract capitalized multi-word phrases (e.g., "Walmart Connect")
+    # Extract capitalized multi-word phrases (e.g., "Large Language Models")
     cap_phrases = re.findall(r"(?:[A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)", prompt)
     entities.extend(cap_phrases)
     # Deduplicate while preserving order
@@ -199,7 +199,7 @@ def detect_intent_heuristic(prompt: str) -> DetectedIntent:
             unique_entities.append(e)
 
     if not unique_entities:
-        unique_entities = ["general competitive intelligence"]
+        unique_entities = ["general research"]
 
     return DetectedIntent(
         intent_type=intent_type,

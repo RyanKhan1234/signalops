@@ -41,10 +41,10 @@ async def create_digest(
     request: Request,
     response: Response,
 ) -> DigestResponse:
-    """Generate a structured competitive intelligence digest from a natural language prompt.
+    """Generate a structured research digest from a natural language prompt.
 
     The pipeline:
-    1. Detects intent (daily_digest, weekly_report, risk_alert, competitor_monitor)
+    1. Detects intent (latest_news, deep_dive, risk_scan, trend_watch)
     2. Plans MCP tool calls
     3. Executes tool calls against the MCP Wrapper
     4. Processes articles: dedup → cluster → extract signals → identify risks/opps

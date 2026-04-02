@@ -38,14 +38,14 @@ class MCPToolResult(BaseModel):
 # Intent models
 # ---------------------------------------------------------------------------
 
-DigestType = Literal["daily_digest", "weekly_report", "risk_alert", "competitor_monitor"]
+DigestType = Literal["latest_news", "deep_dive", "risk_scan", "trend_watch"]
 
 
 class DetectedIntent(BaseModel):
     """Structured intent extracted from a user prompt."""
 
     intent_type: DigestType
-    entities: list[str] = Field(description="Company names, topics, or threat vectors")
+    entities: list[str] = Field(description="Topics, companies, technologies, or domains to research")
     time_range: str = Field(description="Time range code, e.g. '1d', '7d', '30d'")
     original_query: str
 
@@ -96,7 +96,7 @@ class KeySignal(BaseModel):
 
 
 class Risk(BaseModel):
-    """An identified competitive risk."""
+    """An identified risk or concern."""
 
     description: str
     severity: Literal["high", "medium", "low"]
@@ -112,7 +112,7 @@ class Opportunity(BaseModel):
 
 
 class ActionItem(BaseModel):
-    """A prioritized action item for the ops team."""
+    """A prioritized action item or follow-up."""
 
     action: str
     priority: Literal["P0", "P1", "P2"]

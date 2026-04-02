@@ -9,14 +9,14 @@ from src.models.digest import DetectedIntent, PlannedToolCall
 
 
 def make_intent(
-    intent_type: str = "weekly_report",
+    intent_type: str = "deep_dive",
     entities: list[str] | None = None,
     time_range: str = "7d",
 ) -> DetectedIntent:
     """Helper to create test DetectedIntent objects."""
     return DetectedIntent(
         intent_type=intent_type,  # type: ignore[arg-type]
-        entities=entities or ["Walmart Connect"],
+        entities=entities or ["AI models"],
         time_range=time_range,
         original_query="test query",
     )
@@ -25,63 +25,63 @@ def make_intent(
 class TestPlanToolCalls:
     """Tests for plan_tool_calls function."""
 
-    def test_daily_digest_produces_company_news_calls(self) -> None:
-        intent = make_intent(intent_type="daily_digest", time_range="1d")
+    def test_latest_news_produces_search_news_calls(self) -> None:
+        intent = make_intent(intent_type="latest_news", time_range="1d")
         plan = plan_tool_calls(intent)
-        assert all(c.tool_name == "search_company_news" for c in plan.calls)
+        assert all(c.tool_name == "search_news" for c in plan.calls)
 
-    def test_daily_digest_one_call_per_entity(self) -> None:
+    def test_latest_news_one_call_per_entity(self) -> None:
         intent = make_intent(
-            intent_type="daily_digest",
-            entities=["Walmart Connect", "Amazon DSP"],
+            intent_type="latest_news",
+            entities=["AI models", "LLMs"],
             time_range="1d",
         )
         plan = plan_tool_calls(intent)
         assert len(plan.calls) == 2
 
-    def test_weekly_report_includes_both_call_types(self) -> None:
-        intent = make_intent(intent_type="weekly_report", time_range="7d")
+    def test_latest_news_query_includes_entity(self) -> None:
+        intent = make_intent(intent_type="latest_news", entities=["OpenAI"], time_range="1d")
         plan = plan_tool_calls(intent)
-        tool_names = {c.tool_name for c in plan.calls}
-        assert "search_company_news" in tool_names
-        assert "search_news" in tool_names
+        assert any("OpenAI" in str(c.arguments.get("query", "")) for c in plan.calls)
 
-    def test_weekly_report_broader_search_uses_7d_range(self) -> None:
-        intent = make_intent(intent_type="weekly_report", time_range="7d")
+    def test_deep_dive_produces_multiple_search_news_calls(self) -> None:
+        intent = make_intent(intent_type="deep_dive", time_range="7d")
         plan = plan_tool_calls(intent)
-        search_news_calls = [c for c in plan.calls if c.tool_name == "search_news"]
-        assert all(c.arguments["time_range"] == "7d" for c in search_news_calls)
+        assert all(c.tool_name == "search_news" for c in plan.calls)
+        assert len(plan.calls) >= 2  # per-entity + broader context call
 
-    def test_risk_alert_includes_risk_topics(self) -> None:
-        intent = make_intent(intent_type="risk_alert", time_range="1d")
+    def test_deep_dive_broader_search_uses_7d_range(self) -> None:
+        intent = make_intent(intent_type="deep_dive", time_range="7d")
         plan = plan_tool_calls(intent)
-        company_calls = [c for c in plan.calls if c.tool_name == "search_company_news"]
-        assert len(company_calls) >= 1
-        # Should include topics parameter with risk-related terms
-        assert "topics" in company_calls[0].arguments
+        assert all(c.arguments["time_range"] == "7d" for c in plan.calls)
 
-    def test_risk_alert_includes_risk_oriented_search_news(self) -> None:
-        intent = make_intent(intent_type="risk_alert", time_range="1d")
+    def test_risk_scan_query_includes_risk_framing(self) -> None:
+        intent = make_intent(intent_type="risk_scan", time_range="7d")
         plan = plan_tool_calls(intent)
-        search_news_calls = [c for c in plan.calls if c.tool_name == "search_news"]
-        assert len(search_news_calls) >= 1
+        risk_calls = [c for c in plan.calls if "risk" in str(c.arguments.get("query", "")).lower()
+                      or "controversy" in str(c.arguments.get("query", "")).lower()]
+        assert len(risk_calls) >= 1
 
-    def test_competitor_monitor_uses_search_news(self) -> None:
-        intent = make_intent(intent_type="competitor_monitor", time_range="30d")
+    def test_risk_scan_all_search_news(self) -> None:
+        intent = make_intent(intent_type="risk_scan", time_range="7d")
         plan = plan_tool_calls(intent)
         assert all(c.tool_name == "search_news" for c in plan.calls)
 
-    def test_competitor_monitor_wider_result_set(self) -> None:
-        intent = make_intent(intent_type="competitor_monitor", time_range="30d")
+    def test_trend_watch_uses_search_news(self) -> None:
+        intent = make_intent(intent_type="trend_watch", time_range="30d")
         plan = plan_tool_calls(intent)
-        # At least one call should request more results than default
+        assert all(c.tool_name == "search_news" for c in plan.calls)
+
+    def test_trend_watch_wider_result_set(self) -> None:
+        intent = make_intent(intent_type="trend_watch", time_range="30d")
+        plan = plan_tool_calls(intent)
         assert any(c.arguments.get("num_results", 0) > 10 for c in plan.calls)
 
-    def test_all_calls_in_same_parallel_group_for_daily(self) -> None:
-        """Daily digest calls should all be in group 0 (fully parallel)."""
+    def test_all_calls_in_same_parallel_group_for_latest_news(self) -> None:
+        """latest_news calls should all be in group 0 (fully parallel)."""
         intent = make_intent(
-            intent_type="daily_digest",
-            entities=["A", "B", "C"],
+            intent_type="latest_news",
+            entities=["AI", "LLMs", "OpenAI"],
             time_range="1d",
         )
         plan = plan_tool_calls(intent)
@@ -90,11 +90,11 @@ class TestPlanToolCalls:
     def test_entity_cap_at_max_five(self) -> None:
         """Planner should cap at 5 entities even if intent has more."""
         intent = make_intent(
-            intent_type="daily_digest",
+            intent_type="latest_news",
             entities=["A", "B", "C", "D", "E", "F", "G"],
         )
         plan = plan_tool_calls(intent)
-        # For daily_digest, one call per entity, capped at 5
+        # For latest_news, one call per entity, capped at 5
         assert len(plan.calls) <= 5
 
     def test_plan_preserves_intent(self) -> None:
@@ -108,16 +108,15 @@ class TestPlanToolCalls:
         for call in plan.calls:
             assert call.arguments.get("time_range") == "7d"
 
-    def test_empty_entities_produces_no_company_calls(self) -> None:
+    def test_empty_entities_produces_no_calls_for_trend_watch(self) -> None:
         intent = DetectedIntent(
-            intent_type="competitor_monitor",
+            intent_type="trend_watch",
             entities=[],
             time_range="30d",
-            original_query="who is emerging in retail media",
+            original_query="what's trending in AI?",
         )
         plan = plan_tool_calls(intent)
-        company_calls = [c for c in plan.calls if c.tool_name == "search_company_news"]
-        assert len(company_calls) == 0
+        assert len(plan.calls) == 0
 
 
 class TestCountGroups:

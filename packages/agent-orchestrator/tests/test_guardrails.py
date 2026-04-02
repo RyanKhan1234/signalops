@@ -39,7 +39,7 @@ def make_digest(
 ) -> DigestResponse:
     """Helper to build a minimal DigestResponse for testing."""
     return DigestResponse(
-        digest_type="weekly_report",
+        digest_type="deep_dive",
         query="Test query",
         generated_at=datetime.now(tz=timezone.utc),
         report_id="rpt_test123",
@@ -233,7 +233,7 @@ class TestValidateAndSanitize:
 
     def test_missing_report_id_raises_validation_error(self) -> None:
         digest = DigestResponse(
-            digest_type="weekly_report",
+            digest_type="deep_dive",
             query="test",
             generated_at=datetime.now(tz=timezone.utc),
             report_id="",  # Missing!
@@ -250,7 +250,7 @@ class TestValidateAndSanitize:
 
     def test_missing_query_raises_validation_error(self) -> None:
         digest = DigestResponse(
-            digest_type="weekly_report",
+            digest_type="deep_dive",
             query="",  # Missing!
             generated_at=datetime.now(tz=timezone.utc),
             report_id="rpt_test",

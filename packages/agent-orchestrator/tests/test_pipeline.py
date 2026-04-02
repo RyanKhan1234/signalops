@@ -207,7 +207,7 @@ class TestFullPipelineMocked:
 
         # Mock intent detection response
         intent_response = json.dumps({
-            "intent_type": "weekly_report",
+            "intent_type": "deep_dive",
             "entities": ["Walmart Connect"],
             "time_range": "7d",
             "original_query": "Anything important about Walmart Connect this week?",
@@ -315,7 +315,7 @@ class TestFullPipelineMocked:
             )
 
         assert isinstance(digest, DigestResponse)
-        assert digest.digest_type == "weekly_report"
+        assert digest.digest_type == "deep_dive"
         assert digest.query == "Anything important about Walmart Connect this week?"
         assert digest.report_id.startswith("rpt_")
         assert digest.executive_summary
@@ -328,7 +328,7 @@ class TestFullPipelineMocked:
         from src.agent.orchestrator import run_pipeline
 
         intent_response = json.dumps({
-            "intent_type": "weekly_report",
+            "intent_type": "deep_dive",
             "entities": ["Walmart Connect"],
             "time_range": "7d",
             "original_query": "Walmart Connect this week?",
@@ -378,7 +378,7 @@ class TestFullPipelineMocked:
         real_url = "https://example.com/walmart-connect-self-serve"
 
         digest = DigestResponse(
-            digest_type="weekly_report",
+            digest_type="deep_dive",
             query="Walmart Connect this week?",
             generated_at=datetime.now(tz=timezone.utc),
             report_id="rpt_guardrail_test",
@@ -465,7 +465,7 @@ class TestFastAPIEndpoints:
         """The response should echo back the X-Request-ID header."""
         with patch("src.api.routes.run_pipeline", new_callable=AsyncMock) as mock_pipeline:
             mock_pipeline.return_value = DigestResponse(
-                digest_type="weekly_report",
+                digest_type="deep_dive",
                 query="test",
                 generated_at=datetime.now(tz=timezone.utc),
                 report_id="rpt_test",
@@ -489,7 +489,7 @@ class TestFastAPIEndpoints:
         """A successful digest response should match the DigestResponse schema."""
         with patch("src.api.routes.run_pipeline", new_callable=AsyncMock) as mock_pipeline:
             mock_pipeline.return_value = DigestResponse(
-                digest_type="weekly_report",
+                digest_type="deep_dive",
                 query="Anything important about Walmart Connect this week?",
                 generated_at=datetime.now(tz=timezone.utc),
                 report_id="rpt_abc123",
@@ -508,7 +508,7 @@ class TestFastAPIEndpoints:
 
         assert response.status_code == 200
         data = response.json()
-        assert data["digest_type"] == "weekly_report"
+        assert data["digest_type"] == "deep_dive"
         assert data["report_id"] == "rpt_abc123"
         assert "executive_summary" in data
         assert "key_signals" in data

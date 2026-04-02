@@ -41,21 +41,21 @@ def plan_tool_calls(intent: DetectedIntent) -> ToolPlan:
     entities = intent.entities[:MAX_ENTITIES]
     calls: list[PlannedToolCall] = []
 
-    if intent.intent_type == "daily_digest":
-        calls = _plan_daily_digest(entities, intent.time_range)
+    if intent.intent_type == "latest_news":
+        calls = _plan_latest_news(entities, intent.time_range)
 
-    elif intent.intent_type == "weekly_report":
-        calls = _plan_weekly_report(entities, intent.time_range)
+    elif intent.intent_type == "deep_dive":
+        calls = _plan_deep_dive(entities, intent.time_range)
 
-    elif intent.intent_type == "risk_alert":
-        calls = _plan_risk_alert(entities, intent.time_range)
+    elif intent.intent_type == "risk_scan":
+        calls = _plan_risk_scan(entities, intent.time_range)
 
-    elif intent.intent_type == "competitor_monitor":
-        calls = _plan_competitor_monitor(entities, intent.time_range)
+    elif intent.intent_type == "trend_watch":
+        calls = _plan_trend_watch(entities, intent.time_range)
 
     else:
-        logger.warning("Unknown intent_type '%s' — falling back to daily_digest plan", intent.intent_type)
-        calls = _plan_daily_digest(entities, intent.time_range)
+        logger.warning("Unknown intent_type '%s' — falling back to latest_news plan", intent.intent_type)
+        calls = _plan_latest_news(entities, intent.time_range)
 
     logger.info("Planned %d tool calls across %d parallel groups", len(calls), _count_groups(calls))
     return ToolPlan(intent=intent, calls=calls)
@@ -66,15 +66,15 @@ def plan_tool_calls(intent: DetectedIntent) -> ToolPlan:
 # ---------------------------------------------------------------------------
 
 
-def _plan_daily_digest(entities: list[str], time_range: str) -> list[PlannedToolCall]:
-    """Plan: one search_company_news call per entity, all in parallel (group 0)."""
+def _plan_latest_news(entities: list[str], time_range: str) -> list[PlannedToolCall]:
+    """Plan: one search_news call per entity for recent headlines, all parallel (group 0)."""
     calls: list[PlannedToolCall] = []
     for entity in entities:
         calls.append(
             PlannedToolCall(
-                tool_name="search_company_news",
+                tool_name="search_news",
                 arguments={
-                    "company": entity,
+                    "query": f"{entity} latest news",
                     "time_range": time_range,
                     "num_results": DEFAULT_NUM_RESULTS,
                 },
@@ -84,33 +84,29 @@ def _plan_daily_digest(entities: list[str], time_range: str) -> list[PlannedTool
     return calls
 
 
-def _plan_weekly_report(entities: list[str], time_range: str) -> list[PlannedToolCall]:
-    """Plan: search_company_news per entity (group 0) + broader search_news (group 0).
-
-    All calls are in group 0 because they are all independent.
-    """
+def _plan_deep_dive(entities: list[str], time_range: str) -> list[PlannedToolCall]:
+    """Plan: multiple search_news calls covering different angles on the topic, all parallel (group 0)."""
     calls: list[PlannedToolCall] = []
-    # Per-entity company news searches — parallel group 0
     for entity in entities:
+        # Primary search for the topic
         calls.append(
             PlannedToolCall(
-                tool_name="search_company_news",
+                tool_name="search_news",
                 arguments={
-                    "company": entity,
+                    "query": entity,
                     "time_range": time_range,
                     "num_results": DEFAULT_NUM_RESULTS,
                 },
                 parallel_group=0,
             )
         )
-    # Broader thematic search — also group 0 (independent)
+    # Broader context search across all entities combined
     if entities:
-        broader_query = _build_weekly_query(entities)
         calls.append(
             PlannedToolCall(
                 tool_name="search_news",
                 arguments={
-                    "query": broader_query,
+                    "query": _build_deep_dive_query(entities),
                     "time_range": time_range,
                     "num_results": DEFAULT_NUM_RESULTS,
                 },
@@ -120,31 +116,28 @@ def _plan_weekly_report(entities: list[str], time_range: str) -> list[PlannedToo
     return calls
 
 
-def _plan_risk_alert(entities: list[str], time_range: str) -> list[PlannedToolCall]:
-    """Plan: search_company_news per entity (group 0) + risk-oriented search_news (group 0)."""
+def _plan_risk_scan(entities: list[str], time_range: str) -> list[PlannedToolCall]:
+    """Plan: risk/controversy-framed search_news calls per entity + broader risk search, all parallel (group 0)."""
     calls: list[PlannedToolCall] = []
-    # Per-entity company news — parallel group 0
     for entity in entities:
         calls.append(
             PlannedToolCall(
-                tool_name="search_company_news",
+                tool_name="search_news",
                 arguments={
-                    "company": entity,
+                    "query": f"{entity} risk concern problem controversy",
                     "time_range": time_range,
-                    "topics": ["risk", "threat", "competitive", "pricing", "expansion"],
                     "num_results": DEFAULT_NUM_RESULTS,
                 },
                 parallel_group=0,
             )
         )
-    # Risk-oriented broader search — group 0
+    # Broader risk-oriented search across all entities
     if entities:
-        risk_query = _build_risk_query(entities)
         calls.append(
             PlannedToolCall(
                 tool_name="search_news",
                 arguments={
-                    "query": risk_query,
+                    "query": _build_risk_query(entities),
                     "time_range": time_range,
                     "num_results": DEFAULT_NUM_RESULTS,
                 },
@@ -154,29 +147,28 @@ def _plan_risk_alert(entities: list[str], time_range: str) -> list[PlannedToolCa
     return calls
 
 
-def _plan_competitor_monitor(entities: list[str], time_range: str) -> list[PlannedToolCall]:
-    """Plan: broad search_news for industry/segment (group 0)."""
+def _plan_trend_watch(entities: list[str], time_range: str) -> list[PlannedToolCall]:
+    """Plan: broad trend-oriented search_news calls to surface emerging developments, all parallel (group 0)."""
     calls: list[PlannedToolCall] = []
     if entities:
-        industry_query = _build_competitor_query(entities)
+        # Trend landscape search
         calls.append(
             PlannedToolCall(
                 tool_name="search_news",
                 arguments={
-                    "query": industry_query,
+                    "query": _build_trend_query(entities),
                     "time_range": time_range,
-                    "num_results": DEFAULT_NUM_RESULTS * 2,  # wider net for landscape scans
+                    "num_results": DEFAULT_NUM_RESULTS * 2,  # wider net for trend scanning
                 },
                 parallel_group=0,
             )
         )
-        # Also search for "new entrant" / "emerging" framing
-        emerging_query = f"emerging new entrant startup {' '.join(entities)}"
+        # Emerging/new angle search
         calls.append(
             PlannedToolCall(
                 tool_name="search_news",
                 arguments={
-                    "query": emerging_query,
+                    "query": f"emerging new development {' '.join(entities)}",
                     "time_range": time_range,
                     "num_results": DEFAULT_NUM_RESULTS,
                 },
@@ -191,21 +183,21 @@ def _plan_competitor_monitor(entities: list[str], time_range: str) -> list[Plann
 # ---------------------------------------------------------------------------
 
 
-def _build_weekly_query(entities: list[str]) -> str:
-    """Build a broad weekly-report search query from a list of entities."""
+def _build_deep_dive_query(entities: list[str]) -> str:
+    """Build a broad multi-angle query for a deep dive."""
     entity_part = " OR ".join(f'"{e}"' for e in entities[:3])
-    return f"({entity_part}) competitive intelligence strategy"
+    return f"({entity_part}) analysis update development"
 
 
 def _build_risk_query(entities: list[str]) -> str:
-    """Build a risk-oriented search query."""
+    """Build a risk/controversy-oriented search query."""
     entity_part = " OR ".join(f'"{e}"' for e in entities[:3])
-    return f"({entity_part}) risk threat competitive pressure market share"
+    return f"({entity_part}) risk controversy problem backlash warning"
 
 
-def _build_competitor_query(entities: list[str]) -> str:
-    """Build an industry/segment landscape query."""
-    return f"{' '.join(entities)} industry landscape market players competitor"
+def _build_trend_query(entities: list[str]) -> str:
+    """Build a trend landscape search query."""
+    return f"{' '.join(entities)} trend emerging landscape 2025"
 
 
 # ---------------------------------------------------------------------------
