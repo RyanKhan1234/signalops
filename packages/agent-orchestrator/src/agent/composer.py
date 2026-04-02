@@ -28,7 +28,65 @@ from src.models.trace import ToolTraceEntry
 
 logger = logging.getLogger(__name__)
 
-EXEC_SUMMARY_PROMPT = """You are a competitive intelligence analyst writing an executive summary.
+# Outlets considered high-credibility for risk scoring.
+# Matched case-insensitively against the article's `source` field.
+_HIGH_CREDIBILITY_OUTLETS: frozenset[str] = frozenset({
+    "reuters",
+    "bloomberg",
+    "associated press",
+    "ap news",
+    "bbc",
+    "bbc news",
+    "the new york times",
+    "new york times",
+    "the wall street journal",
+    "wall street journal",
+    "wsj",
+    "financial times",
+    "the guardian",
+    "washington post",
+    "the washington post",
+    "techcrunch",
+    "the verge",
+    "wired",
+    "ars technica",
+    "mit technology review",
+    "nature",
+    "science",
+    "axios",
+    "politico",
+})
+
+
+def _score_source_credibility(
+    source_urls: list[str],
+    url_to_article: dict[str, Article],
+) -> Literal["high", "medium", "low"]:
+    """Score how credible the sources backing a risk are.
+
+    Rules:
+    - high: any source is a recognized outlet, OR 3+ distinct outlets
+    - medium: exactly 2 distinct outlets
+    - low: single outlet not in the recognized list
+    """
+    outlets: list[str] = []
+    for url in source_urls:
+        article = url_to_article.get(url)
+        if article and article.source:
+            outlets.append(article.source.lower().strip())
+
+    distinct_outlets = set(outlets)
+
+    if any(o in _HIGH_CREDIBILITY_OUTLETS for o in distinct_outlets):
+        return "high"
+    if len(distinct_outlets) >= 3:
+        return "high"
+    if len(distinct_outlets) == 2:
+        return "medium"
+    return "low"
+
+
+EXEC_SUMMARY_PROMPT = """You are a research analyst writing an executive summary.
 Given the digest type, query, and list of key signals, write a concise 2-3 sentence executive summary.
 
 Rules:
@@ -75,8 +133,22 @@ async def compose_digest(
         intent.intent_type, intent.original_query, signals
     )
 
+    # Build URL → Article lookup for credibility scoring and source building
+    url_to_article: dict[str, Article] = {a.url: a for a in all_articles if a.url}
+
+    # Score source credibility on each risk
+    scored_risks = [
+        Risk(
+            description=r.description,
+            severity=r.severity,
+            source_credibility=_score_source_credibility(r.source_urls, url_to_article),
+            source_urls=r.source_urls,
+        )
+        for r in risks
+    ]
+
     # Build sources list from all articles that are actually referenced
-    referenced_urls: set[str] = _collect_referenced_urls(signals, risks, opportunities)
+    referenced_urls: set[str] = _collect_referenced_urls(signals, scored_risks, opportunities)
     sources = _build_sources(all_articles, referenced_urls)
 
     digest = DigestResponse(
@@ -86,7 +158,7 @@ async def compose_digest(
         report_id=report_id,
         executive_summary=executive_summary,
         key_signals=signals,
-        risks=risks,
+        risks=scored_risks,
         opportunities=opportunities,
         action_items=action_items,
         sources=sources,
@@ -98,7 +170,7 @@ async def compose_digest(
         report_id,
         intent.intent_type,
         len(signals),
-        len(risks),
+        len(scored_risks),
         len(opportunities),
         len(action_items),
         len(sources),

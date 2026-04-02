@@ -100,6 +100,7 @@ class Risk(BaseModel):
 
     description: str
     severity: Literal["high", "medium", "low"]
+    source_credibility: Literal["high", "medium", "low"] = "low"
     source_urls: list[str]
 
 

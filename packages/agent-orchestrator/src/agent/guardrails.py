@@ -97,6 +97,7 @@ def validate_and_sanitize(
                 Risk(
                     description=risk.description,
                     severity=risk.severity,
+                    source_credibility=risk.source_credibility,
                     source_urls=clean_urls,
                 )
             )
@@ -160,6 +161,7 @@ def validate_and_sanitize(
             Risk(
                 description=r.description,
                 severity=r.severity,
+                source_credibility=r.source_credibility,
                 source_urls=[u for u in r.source_urls if u in source_url_set],
             )
             for r in clean_risks
