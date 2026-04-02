@@ -1,87 +1,72 @@
 # SignalOps
 
-**AI-powered personal intelligence system for structured, source-attributed research.**
+**A personal news research tool powered by a LangChain agent.**
 
-SignalOps is a tool I built to improve how I personally research and understand complex topics — and to deepen my hands-on experience with LangChain and agentic AI systems.
+I built SignalOps because I wanted a better way to research topics I actually care about — AI developments, market trends, whatever I'm currently curious about. Instead of opening a dozen tabs and manually piecing things together, I type a question and get a structured breakdown with every source visible and every step of the agent's reasoning exposed.
 
-When I look into something — whether it's a company, product, or trend — I don't just want a summary. I want:
-- clear signals  
-- trustworthy sources  
-- structured insights  
-- and visibility into how conclusions were formed  
-
-Most tools give answers.  
-SignalOps gives you **answers + reasoning + sources**.
+The data comes from real-time public news (via SerpApi). The value is in how the agent structures, attributes, and surfaces it.
 
 ---
 
 ## Why I built this
 
-My typical research workflow used to look like:
-- open multiple tabs  
-- skim articles  
-- manually piece together insights  
-- lose track of sources  
+When I'm researching something — a new AI release, an emerging trend, anything — my workflow used to be:
+- open tabs
+- skim articles
+- try to mentally connect the dots
+- lose track of where things came from
 
-This made it hard to trust conclusions, trace where insights came from, or understand how different signals connect.
+I wanted something that would do the gathering and structuring for me, while staying completely transparent about its sources and how it reached its conclusions. I also wanted a real project to go deep on LangChain — not just follow tutorials, but actually design an agent pipeline from scratch.
 
-SignalOps replaces that with a structured agent pipeline that:
-- gathers relevant data via real-time news search  
-- analyzes and clusters articles by theme  
-- attributes every claim to a source  
-- exposes the full reasoning process — every tool call, every decision  
-
-It also became the project I used to learn LangChain deeply. The agent orchestration layer is built on **LangChain + LangGraph**, and building it forced me to understand how to design multi-step agent graphs, manage tool call tracing, handle retries, and enforce output guarantees — things you don't get from tutorials.
+SignalOps was the answer to both.
 
 ---
 
 ## What it does
 
-You give SignalOps a natural language prompt:
+Type a natural language question:
 
 ```text
-"Anything important about Walmart Connect this week?"
-"What are the biggest risks around OpenAI right now?"
-"Give me a daily digest on Shopify."
+"What's new in AI model releases this week?"
+"Any major developments in sports betting regulation lately?"
+"Give me a breakdown of what's happening with Shopify."
 ```
 
-SignalOps returns a **structured intelligence digest**:
+SignalOps runs a LangChain agent that searches for relevant news, processes the results, and returns a structured digest:
 
-- **Executive Summary** — 2-3 sentence overview of what matters
+- **Executive Summary** — 2-3 sentence overview
 - **Key Signals** — notable developments, each linked to its source article
-- **Risks** — threats or concerns flagged with severity
-- **Opportunities** — strategic openings with confidence indicators
-- **Action Items** — prioritized (P0/P1/P2) next steps
-- **Sources** — every referenced article with title, publisher, and date
-- **Tool Trace** — a full log of every search query run, what it returned, and how long it took
+- **Risks** — concerns or threats flagged with severity
+- **Opportunities** — relevant openings or tailwinds
+- **Action Items** — prioritized next steps if applicable
+- **Sources** — every article referenced, with title, publisher, and date
+- **Tool Trace** — every search query the agent ran, what it returned, and how long it took
 
-Every claim in the digest is traceable to a real article. If no relevant articles exist, the system says so — it never fabricates intelligence.
+Every claim links back to a real article. If nothing relevant was found, it says so — no fabrication.
 
 ---
 
 ## How the LangChain agent works
 
-The core of SignalOps is a **LangGraph agent graph** in the `agent-orchestrator` package. I built this to get hands-on with the full LangChain ecosystem — not just basic chains, but real agentic workflows with structured outputs, tool use, guardrails, and traceability.
+The core of SignalOps is a **LangGraph agent graph** in the `agent-orchestrator` package. This was the main thing I wanted to build — a real agentic pipeline with structured outputs, tool use, guardrails, and full observability.
 
 ### Agent graph
 
 ```
 [START]
-  → detect_intent        # LLM-powered intent + entity extraction (structured output)
-  → plan_tools           # Decide which MCP tools to call and in what order
-  → execute_tools        # Run tool calls (parallel where possible)
-  → process_articles     # Deduplicate, cluster, extract signals
+  → detect_intent        # LLM classifies the query and extracts entities (structured output)
+  → plan_tools           # Decides which searches to run and in what order
+  → execute_tools        # Runs searches in parallel where possible
+  → process_articles     # Deduplicates, clusters, and extracts signals
   → compose_digest       # LLM composes the structured digest from processed articles
-  → validate_guardrails  # Enforce source attribution — loop back if validation fails
-  → log_trace            # Persist report + tool trace to Traceability Store
+  → validate_guardrails  # Enforces source attribution — loops back if a claim can't be traced
+  → log_trace            # Persists the report and full tool trace
 [END]
 ```
 
-Each node is an async LangGraph node. The graph supports conditional edges (e.g., the guardrails node can loop back to re-compose if attribution fails) and parallel tool execution.
-
 ### Intent detection
 
-The first node uses Claude with **structured output** (via LangChain's `.with_structured_output()`) to classify the prompt and extract entities:
+The first node uses Claude with **structured output** (via LangChain's `.with_structured_output()`) to classify the query and extract what to search for:
 
 ```python
 class DetectedIntent(BaseModel):
@@ -91,19 +76,17 @@ class DetectedIntent(BaseModel):
     original_query: str
 ```
 
-This was one of the more interesting LangChain patterns to implement — using the LLM not to generate prose, but to reliably produce a typed schema that the rest of the graph depends on.
+Using the LLM to produce a typed schema rather than prose was one of the more useful patterns I learned here — it makes the rest of the graph reliable.
 
 ### Tool use via MCP
 
-Rather than calling a search API directly, the orchestrator uses an **MCP (Model Context Protocol) client** to call tools exposed by a separate `mcp-wrapper` service. This keeps the agent decoupled from external APIs and gives the tool layer its own caching, rate limiting, and normalization logic.
+The agent doesn't call SerpApi directly. It calls tools exposed by a separate `mcp-wrapper` service over MCP (Model Context Protocol). That service handles caching, rate limiting, and normalizing raw API responses before the agent ever sees them.
 
-LangChain's tool integration made it straightforward to bind MCP tools to the agent and capture inputs, outputs, and latency for every call — which feeds directly into the tool trace.
+LangChain's tool integration captures every call's inputs, outputs, and latency automatically, which populates the tool trace shown in the UI.
 
 ### Guardrails
 
-The guardrails node enforces the core invariant: **every signal, risk, and opportunity must cite a URL that was actually returned by a tool call**. This is implemented as a post-composition validation pass. If the LLM includes a claim without a traceable source, that claim is dropped and the graph retries composition.
-
-This was a deliberate architectural choice — using the graph's conditional edges to build a feedback loop rather than relying on prompt instructions alone.
+Before the digest is returned, a validation pass checks that every signal, risk, and opportunity cites a URL that was actually returned by a tool call. If the LLM included a claim without a traceable source, it's dropped and composition retries. This is enforced as graph logic, not just a prompt instruction.
 
 ---
 
@@ -125,6 +108,8 @@ Browser → React (Web App)
 | MCP Wrapper | Python 3.11, MCP SDK, httpx, in-memory cache |
 | Traceability Store | Python 3.11, FastAPI, SQLAlchemy 2.0, PostgreSQL 16 |
 
+**Data source:** public news via SerpApi (Google News). The intelligence layer is the structured analysis pipeline built on top of it.
+
 ---
 
 ## Running locally
@@ -145,13 +130,11 @@ docker compose up
 open http://localhost:3000
 ```
 
-All four services start together. The web app is on `:3000`, the agent orchestrator on `:8000`.
-
 ---
 
 ## What I learned
 
-This project was primarily a vehicle for going deeper on LangChain. Key things I worked through:
+This project was primarily a vehicle for going deep on LangChain. Key things I worked through:
 
 - **LangGraph state machines** — designing agent graphs with conditional edges and retry loops rather than linear chains
 - **Structured outputs** — using `.with_structured_output()` for reliable typed responses instead of parsing prose
