@@ -69,11 +69,13 @@ The core of SignalOps is a **LangGraph agent graph** in the `agent-orchestrator`
 The first node uses Claude with **structured output** (via LangChain's `.with_structured_output()`) to classify the query and extract what to search for:
 
 ```python
+# prompt: "What new AI models dropped this week?"
+
 class DetectedIntent(BaseModel):
-    intent_type: Literal["daily_digest", "weekly_report", "risk_alert", "competitor_monitor"]
-    entities: list[str]
-    time_range: str
-    original_query: str
+    intent_type: Literal["latest_developments", "deep_dive", "trend_watch", "risk_scan"]
+    entities: list[str]        # ["AI models", "LLMs", "foundation models"]
+    time_range: str            # "7d"
+    original_query: str        # "What new AI models dropped this week?"
 ```
 
 Using the LLM to produce a typed schema rather than prose was one of the more useful patterns I learned here — it makes the rest of the graph reliable.
