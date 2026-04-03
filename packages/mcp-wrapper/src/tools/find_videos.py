@@ -1,6 +1,6 @@
-"""``search_videos`` MCP tool implementation.
+"""``find_videos`` MCP tool implementation.
 
-Searches YouTube via SerpApi and returns a normalised list of video results.
+Discovers YouTube via SerpApi and returns a normalised list of video results.
 Follows the same middleware pipeline as all other MCP tools.
 
 Middleware pipeline
@@ -33,14 +33,14 @@ from src.middleware.error_handler import (
     validation_error_response,
 )
 from src.middleware.rate_limiter import RateLimiter
-from src.middleware.validator import validate_search_videos_inputs
+from src.middleware.validator import validate_find_videos_inputs
 from src.serpapi.client import SerpApiClient
 from src.serpapi.normalizer import normalize_video_results
 
 logger = logging.getLogger(__name__)
 
 
-async def execute_search_videos(
+async def execute_find_videos(
     query: str,
     num_results: int = 10,
     *,
@@ -48,7 +48,7 @@ async def execute_search_videos(
     cache: ResponseCache,
     rate_limiter: RateLimiter,
 ) -> dict[str, Any]:
-    """Search YouTube for videos matching a query.
+    """Discover YouTube for videos matching a query.
 
     Parameters
     ----------
@@ -71,18 +71,18 @@ async def execute_search_videos(
     request_id = str(uuid.uuid4())
 
     # 1. Validate inputs.
-    errors = validate_search_videos_inputs(query, num_results)
+    errors = validate_find_videos_inputs(query, num_results)
     if errors:
         return validation_error_response(errors)
 
     # 2. Check cache.
     cache_key = ResponseCache.make_key(
-        "search_videos",
+        "find_videos",
         {"query": query, "num_results": num_results},
     )
     cached_value = cache.get(cache_key)
     if cached_value is not None:
-        logger.info("Cache HIT — search_videos query=%r", query)
+        logger.info("Cache HIT — find_videos query=%r", query)
         cached_value["cached"] = True
         cached_value["request_id"] = request_id
         return cached_value
@@ -97,7 +97,7 @@ async def execute_search_videos(
 
     # 4. Call SerpApi.
     try:
-        raw_response = await client.search_videos(
+        raw_response = await client.find_videos(
             query=query,
             num_results=num_results,
         )
@@ -134,7 +134,7 @@ async def execute_search_videos(
     cache.set(cache_key, result)
 
     logger.info(
-        "search_videos OK — query=%r results=%d request_id=%s",
+        "find_videos OK — query=%r results=%d request_id=%s",
         query,
         normalised.total_results,
         request_id,

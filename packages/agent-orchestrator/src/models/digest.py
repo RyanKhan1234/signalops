@@ -58,7 +58,19 @@ class DetectedIntent(BaseModel):
 class PlannedToolCall(BaseModel):
     """A single planned MCP tool call."""
 
-    tool_name: Literal["search_news", "search_company_news", "get_article_metadata"]
+    tool_name: Literal[
+        "search_news",
+        "search_company_news",
+        "get_article_metadata",
+        "search_web",
+        "search_scholar",
+        "search_finance",
+        "find_videos",
+        "search_github",
+        "search_reddit",
+        "search_quora",
+        "fetch_page",
+    ]
     arguments: dict[str, str | list[str] | int]
     parallel_group: int = Field(
         default=0,

@@ -179,7 +179,7 @@ class TestPlanToolCalls:
     def test_trend_watch_includes_videos(self) -> None:
         intent = make_intent(intent_type="trend_watch", time_range="30d")
         plan = plan_tool_calls(intent)
-        assert any(c.tool_name == "search_videos" for c in plan.calls)
+        assert any(c.tool_name == "find_videos" for c in plan.calls)
 
     def test_trend_watch_includes_reddit(self) -> None:
         intent = make_intent(intent_type="trend_watch", time_range="30d")

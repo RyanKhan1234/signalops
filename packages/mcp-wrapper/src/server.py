@@ -9,7 +9,7 @@ exposed to the Agent Orchestrator:
 * ``search_web``          — general Google web search
 * ``search_scholar``      — Google Scholar academic search
 * ``search_finance``      — Google Finance market data
-* ``search_videos``       — YouTube video search
+* ``find_videos``       — YouTube video search
 * ``search_github``       — GitHub repository search
 * ``search_reddit``       — Reddit post search
 * ``search_quora``        — Quora Q&A search
@@ -41,7 +41,7 @@ from src.tools.search_news import execute_search_news
 from src.tools.search_quora import execute_search_quora
 from src.tools.search_reddit import execute_search_reddit
 from src.tools.search_scholar import execute_search_scholar
-from src.tools.search_videos import execute_search_videos
+from src.tools.find_videos import execute_find_videos
 from src.tools.search_web import execute_search_web
 
 logger = logging.getLogger(__name__)
@@ -222,7 +222,7 @@ async def list_tools() -> list[Tool]:
             },
         ),
         Tool(
-            name="search_videos",
+            name="find_videos",
             description=(
                 "Search YouTube for videos. "
                 "Returns video titles, channel names, and links."
@@ -417,8 +417,8 @@ async def call_tool(name: str, arguments: dict[str, Any]) -> list[TextContent]:
             rate_limiter=_rate_limiter,
         )
 
-    elif name == "search_videos":
-        result = await execute_search_videos(
+    elif name == "find_videos":
+        result = await execute_find_videos(
             query=arguments.get("query", ""),
             num_results=arguments.get("num_results", 10),
             client=_serpapi_client,

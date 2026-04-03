@@ -386,7 +386,7 @@ def _plan_trend_watch(entities: list[str], time_range: str) -> list[PlannedToolC
         # Video content for trend discovery
         calls.append(
             PlannedToolCall(
-                tool_name="search_videos",
+                tool_name="find_videos",
                 arguments={
                     "query": f"{' '.join(entities)} latest developments 2025",
                     "num_results": DEFAULT_NUM_RESULTS,

@@ -314,11 +314,11 @@ def validate_search_finance_inputs(
     return errors
 
 
-def validate_search_videos_inputs(
+def validate_find_videos_inputs(
     query: str | None,
     num_results: int | None = None,
 ) -> list[ValidationError]:
-    """Validate all inputs for the ``search_videos`` tool."""
+    """Validate all inputs for the ``find_videos`` tool."""
     errors: list[ValidationError] = []
     for check in (
         validate_query(query),
