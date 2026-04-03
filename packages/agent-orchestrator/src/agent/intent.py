@@ -10,7 +10,8 @@ import json
 import logging
 import re
 
-from anthropic import AsyncAnthropic
+from langchain_core.messages import HumanMessage, SystemMessage
+from langchain_openai import ChatOpenAI
 
 from src.config import settings
 from src.models.digest import DetectedIntent, DigestType
@@ -87,21 +88,19 @@ async def detect_intent(prompt: str) -> DetectedIntent:
     """
     logger.info("Detecting intent for prompt: %s", prompt[:100])
 
-    client = AsyncAnthropic(api_key=settings.anthropic_api_key)
-
-    message = await client.messages.create(
-        model=settings.anthropic_model,
+    llm = ChatOpenAI(
+        model=settings.openai_model,
+        api_key=settings.openai_api_key,
+        temperature=0,
         max_tokens=512,
-        system=INTENT_SYSTEM_PROMPT,
-        messages=[
-            {
-                "role": "user",
-                "content": f"Classify this prompt:\n\n{prompt}",
-            }
-        ],
     )
 
-    raw_text = message.content[0].text.strip()
+    response = await llm.ainvoke([
+        SystemMessage(content=INTENT_SYSTEM_PROMPT),
+        HumanMessage(content=f"Classify this prompt:\n\n{prompt}"),
+    ])
+
+    raw_text = response.content.strip() if isinstance(response.content, str) else str(response.content)
     logger.debug("Raw intent response: %s", raw_text)
 
     try:

@@ -11,7 +11,7 @@ from typing import Any
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.db.models import Report, Source, ToolCall
+from src.db.models import Report, Source, ToolCall, UserProfile
 
 
 # ---------------------------------------------------------------------------
@@ -384,3 +384,55 @@ class SourceRepository:
             .order_by(Source.accessed_at.asc())
         )
         return list(result.scalars().all())
+
+
+# ---------------------------------------------------------------------------
+# User profile repository
+# ---------------------------------------------------------------------------
+
+
+class UserProfileRepository:
+    """CRUD operations for the user_profiles table."""
+
+    def __init__(self, session: AsyncSession) -> None:
+        self._session = session
+
+    async def get_by_user_id(self, user_id: str) -> UserProfile | None:
+        result = await self._session.execute(
+            select(UserProfile).where(UserProfile.user_id == user_id)
+        )
+        return result.scalar_one_or_none()
+
+    async def upsert(
+        self,
+        *,
+        user_id: str,
+        display_name: str | None = None,
+        context: str = "",
+    ) -> UserProfile:
+        """Create or update a user profile.
+
+        If a row with the given ``user_id`` already exists its ``display_name``,
+        ``context``, and ``updated_at`` fields are overwritten.  Otherwise a new
+        row is inserted.
+        """
+        existing = await self.get_by_user_id(user_id)
+        if existing is not None:
+            existing.display_name = display_name
+            existing.context = context
+            # Manually bump updated_at for SQLite compat (no onupdate trigger)
+            from datetime import datetime, timezone
+            existing.updated_at = datetime.now(tz=timezone.utc)
+            await self._session.flush()
+            await self._session.refresh(existing)
+            return existing
+
+        profile = UserProfile(
+            user_id=user_id,
+            display_name=display_name,
+            context=context,
+        )
+        self._session.add(profile)
+        await self._session.flush()
+        await self._session.refresh(profile)
+        return profile

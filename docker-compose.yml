@@ -69,6 +69,7 @@ services:
       RATE_LIMIT_PER_DAY: ${RATE_LIMIT_PER_DAY:-1000}
       MCP_TRANSPORT: ${MCP_TRANSPORT:-sse}
       MCP_SSE_PORT: 8001
+      TRACEABILITY_STORE_URL: http://traceability-store:8002
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
     ports:
       - "8001:8001"
@@ -89,7 +90,9 @@ services:
     container_name: signalops-agent-orchestrator
     restart: unless-stopped
     environment:
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
+      RESEARCH_MODEL: ${RESEARCH_MODEL:-gpt-4o-mini}
       MCP_WRAPPER_URL: http://mcp-wrapper:8001
       TRACEABILITY_STORE_URL: http://traceability-store:8002
       LOG_LEVEL: ${LOG_LEVEL:-INFO}

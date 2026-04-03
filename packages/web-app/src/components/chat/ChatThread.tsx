@@ -12,20 +12,22 @@
  */
 
 import { useEffect, useRef } from 'react';
-import type { ChatMessage, DigestResponse } from '../../types/digest';
+import type { ChatMessage, DigestResponse, StreamEvent } from '../../types/digest';
 import { DashboardContent } from '../dashboard/DashboardContent';
 import { LoadingSpinner } from '../common/LoadingSpinner';
 import { ErrorAlert } from '../common/ErrorAlert';
+import { StreamingProgress } from './StreamingProgress';
 
 interface ChatThreadProps {
   messages: ChatMessage[];
   isLoading: boolean;
+  streamEvents?: StreamEvent[];
 }
 
 /**
  * Renders the chat thread with messages and auto-scroll behaviour.
  */
-export function ChatThread({ messages, isLoading }: ChatThreadProps) {
+export function ChatThread({ messages, isLoading, streamEvents = [] }: ChatThreadProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll to bottom whenever messages change or loading state changes
@@ -121,10 +123,16 @@ export function ChatThread({ messages, isLoading }: ChatThreadProps) {
             </div>
           ))}
 
-          {/* Loading indicator appended at bottom of thread */}
+          {/* Streaming progress or loading spinner at bottom of thread */}
           {isLoading && (
-            <div className="flex items-center justify-center px-6 py-8">
-              <LoadingSpinner size="lg" label="Generating digest..." />
+            <div className="px-6 py-4">
+              {streamEvents.length > 0 ? (
+                <StreamingProgress events={streamEvents} />
+              ) : (
+                <div className="flex items-center justify-center py-4">
+                  <LoadingSpinner size="lg" label="Connecting to agent..." />
+                </div>
+              )}
             </div>
           )}
         </div>

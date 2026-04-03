@@ -12,9 +12,14 @@ class Settings(BaseSettings):
         case_sensitive=False,
     )
 
-    # Anthropic / LLM
+    # OpenAI / LLM
+    openai_api_key: str = ""
+    openai_model: str = "gpt-4o-mini"
+    research_model: str = "gpt-4o-mini"
+    max_research_iterations: int = 8
+
+    # Legacy — kept for backwards compat if someone still has it in .env
     anthropic_api_key: str = ""
-    anthropic_model: str = "claude-opus-4-6"
 
     # Service URLs
     mcp_wrapper_url: str = "http://localhost:8001"
@@ -32,6 +37,12 @@ class Settings(BaseSettings):
 
     # Correlation ID header
     correlation_id_header: str = "X-Request-ID"
+
+    # LangSmith tracing
+    langsmith_tracing: str = "false"
+    langsmith_api_key: str = ""
+    langsmith_project: str = "signalops"
+    langsmith_endpoint: str = "https://api.smith.langchain.com"
 
 
 settings = Settings()

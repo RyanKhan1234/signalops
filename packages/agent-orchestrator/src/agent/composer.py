@@ -11,7 +11,8 @@ import logging
 import uuid
 from datetime import datetime, timezone
 
-from anthropic import AsyncAnthropic
+from langchain_core.messages import HumanMessage
+from langchain_openai import ChatOpenAI
 
 from src.config import settings
 from src.models.digest import (
@@ -86,20 +87,23 @@ def _score_source_credibility(
     return "low"
 
 
-EXEC_SUMMARY_PROMPT = """You are a research analyst writing an executive summary.
-Given the digest type, query, and list of key signals, write a concise 2-3 sentence executive summary.
+EXEC_SUMMARY_PROMPT = """Write a concise 2-3 sentence overview of what was found for this research query.
+Write in a direct, conversational tone — like you're briefing a friend, not writing a report.
 
 Rules:
 - Maximum 3 sentences
-- Focus on the most important business impact
-- Do NOT invent any facts — only summarize what is in the signals
-- If signals list is empty, say "No significant developments were found for this query in the specified time range."
+- Lead with the most interesting or important thing you found
+- Do NOT invent any facts — only summarize what is in the findings and research
+- If the findings list is empty, say "Nothing significant turned up for this query in the time range covered."
 - Output ONLY the summary text — no JSON, no quotes, no preamble
 
-Digest type: {digest_type}
+Research type: {digest_type}
 Query: {query}
-Key signals:
-{signals_json}"""
+Key findings:
+{signals_json}
+
+Research notes:
+{research_summary}"""
 
 
 async def compose_digest(
@@ -110,6 +114,9 @@ async def compose_digest(
     opportunities: list[Opportunity],
     action_items: list[ActionItem],
     tool_traces: list[ToolTraceEntry],
+    research_summary: str = "",
+    reasoning_steps: list[str] | None = None,
+    user_context: str = "",
 ) -> DigestResponse:
     """Assemble the final DigestResponse from all pipeline outputs.
 
@@ -121,6 +128,8 @@ async def compose_digest(
         opportunities: Identified opportunities.
         action_items: Prioritized action items.
         tool_traces: All tool call traces for the audit log.
+        research_summary: The agent's research summary from the agentic loop.
+        reasoning_steps: Step-by-step reasoning from the agent's research.
 
     Returns:
         A fully populated DigestResponse.
@@ -128,15 +137,13 @@ async def compose_digest(
     report_id = f"rpt_{uuid.uuid4().hex[:12]}"
     generated_at = datetime.now(tz=timezone.utc)
 
-    # Generate executive summary
     executive_summary = await _generate_executive_summary(
-        intent.intent_type, intent.original_query, signals
+        intent.intent_type, intent.original_query, signals, research_summary,
+        user_context=user_context,
     )
 
-    # Build URL → Article lookup for credibility scoring and source building
     url_to_article: dict[str, Article] = {a.url: a for a in all_articles if a.url}
 
-    # Score source credibility on each risk
     scored_risks = [
         Risk(
             description=r.description,
@@ -147,7 +154,6 @@ async def compose_digest(
         for r in risks
     ]
 
-    # Build sources list from all articles that are actually referenced
     referenced_urls: set[str] = _collect_referenced_urls(signals, scored_risks, opportunities)
     sources = _build_sources(all_articles, referenced_urls)
 
@@ -157,6 +163,8 @@ async def compose_digest(
         generated_at=generated_at,
         report_id=report_id,
         executive_summary=executive_summary,
+        research_summary=research_summary,
+        reasoning_steps=reasoning_steps or [],
         key_signals=signals,
         risks=scored_risks,
         opportunities=opportunities,
@@ -182,33 +190,42 @@ async def _generate_executive_summary(
     digest_type: str,
     query: str,
     signals: list[KeySignal],
+    research_summary: str = "",
+    user_context: str = "",
 ) -> str:
     """Generate a concise executive summary using the LLM.
 
     Falls back to a safe default message if the LLM call fails.
     """
-    if not signals:
+    if not signals and not research_summary:
         return "No significant developments were found in the specified time range."
 
-    client = AsyncAnthropic(api_key=settings.anthropic_api_key)
+    llm = ChatOpenAI(
+        model=settings.openai_model,
+        api_key=settings.openai_api_key,
+        temperature=0.1,
+        max_tokens=256,
+    )
     signals_data = [
         {"signal": s.signal, "relevance": s.relevance, "source_title": s.source_title}
-        for s in signals[:8]  # cap to avoid exceeding token limits
+        for s in signals[:8]
     ]
-    prompt = EXEC_SUMMARY_PROMPT.format(
+    context_prefix = ""
+    if user_context.strip():
+        context_prefix = (
+            f"The person reading this: {user_context.strip()[:500]}\n"
+            f"Write the overview with their perspective in mind.\n\n"
+        )
+    prompt = context_prefix + EXEC_SUMMARY_PROMPT.format(
         digest_type=digest_type,
         query=query,
         signals_json=json.dumps(signals_data, indent=2),
+        research_summary=research_summary[:1500] if research_summary else "(none)",
     )
 
     try:
-        message = await client.messages.create(
-            model=settings.anthropic_model,
-            max_tokens=256,
-            messages=[{"role": "user", "content": prompt}],
-        )
-        summary = message.content[0].text.strip()
-        # Enforce sentence count (trim to 3 sentences)
+        response = await llm.ainvoke([HumanMessage(content=prompt)])
+        summary = response.content.strip() if isinstance(response.content, str) else str(response.content)
         sentences = summary.split(". ")
         if len(sentences) > 3:
             summary = ". ".join(sentences[:3]) + "."
@@ -219,13 +236,13 @@ async def _generate_executive_summary(
 
 
 def _fallback_summary(digest_type: str, signals: list[KeySignal]) -> str:
-    """Build a simple fallback executive summary without LLM."""
+    """Build a simple fallback summary without LLM."""
     if not signals:
-        return "No significant developments were found in the specified time range."
+        return "Nothing significant turned up for this query in the time range covered."
     top_signal = signals[0].signal
     return (
-        f"This {digest_type.replace('_', ' ')} identified {len(signals)} key signal(s). "
-        f"The most significant: {top_signal}"
+        f"Found {len(signals)} notable thing(s) in this {digest_type.replace('_', ' ')}. "
+        f"The biggest: {top_signal}"
     )
 
 

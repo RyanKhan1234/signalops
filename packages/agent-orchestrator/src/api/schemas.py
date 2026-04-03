@@ -15,6 +15,11 @@ class DigestRequest(BaseModel):
         description="Natural language research prompt — any topic, company, or question",
         examples=["What's new in AI model releases this week?"],
     )
+    user_id: str = Field(
+        default="default",
+        max_length=100,
+        description="User identifier for loading personalized context",
+    )
 
 
 class HealthResponse(BaseModel):

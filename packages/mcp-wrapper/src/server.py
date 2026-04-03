@@ -1,22 +1,27 @@
 """SignalOps MCP server definition and tool registration.
 
 This module wires together the middleware pipeline and registers all MCP tools
-exposed to the Agent Orchestrator:
+exposed to the Agent Orchestrator.
 
-* ``search_news``         — general news search (Google News)
-* ``search_company_news`` — company-specific news search
-* ``get_article_metadata``— article metadata lookup
-* ``search_web``          — general Google web search
-* ``search_scholar``      — Google Scholar academic search
-* ``search_finance``      — Google Finance market data
-* ``find_videos``       — YouTube video search
-* ``search_github``       — GitHub repository search
-* ``search_reddit``       — Reddit post search
-* ``search_quora``        — Quora Q&A search
-* ``fetch_page``          — fetch and extract text from a URL
+**Data gathering tools** (external API calls):
+* ``search_news``            — general news search (Google News)
+* ``search_company_news``    — company-specific news search
+* ``get_article_metadata``   — article metadata lookup
+* ``search_web``             — general Google web search
+* ``search_scholar``         — Google Scholar academic search
+* ``search_finance``         — Google Finance market data
+* ``find_videos``            — YouTube video search
+* ``search_github``          — GitHub repository search
+* ``search_reddit``          — Reddit post search
+* ``search_quora``           — Quora Q&A search
+* ``fetch_page``             — fetch and extract text from a URL
 
-Each tool shares the same middleware pipeline:
-  validate → cache check → rate limit → external API → normalise → cache store → return
+**Analytical tools** (local computation, no external API calls):
+* ``analyze_sentiment``      — NLP sentiment scoring with key phrase extraction
+* ``extract_entities``       — regex-based named entity recognition (NER)
+* ``compare_sources``        — cross-reference 2-3 articles for agreement/divergence
+* ``query_past_research``    — search traceability store for past digests
+* ``calculate_trend``        — multi-window mention frequency trend computation
 """
 
 from __future__ import annotations
@@ -29,20 +34,10 @@ from mcp.server.models import InitializationOptions
 from mcp.types import TextContent, Tool
 
 from src.config import get_config
+from src.dispatch import dispatch_tool
 from src.middleware.cache import ResponseCache
 from src.middleware.rate_limiter import RateLimiter
 from src.serpapi.client import SerpApiClient
-from src.tools.fetch_page import execute_fetch_page
-from src.tools.get_article_metadata import execute_get_article_metadata
-from src.tools.search_company_news import execute_search_company_news
-from src.tools.search_finance import execute_search_finance
-from src.tools.search_github import execute_search_github
-from src.tools.search_news import execute_search_news
-from src.tools.search_quora import execute_search_quora
-from src.tools.search_reddit import execute_search_reddit
-from src.tools.search_scholar import execute_search_scholar
-from src.tools.find_videos import execute_find_videos
-from src.tools.search_web import execute_search_web
 
 logger = logging.getLogger(__name__)
 
@@ -346,6 +341,95 @@ async def list_tools() -> list[Tool]:
                 "required": ["url"],
             },
         ),
+        # --- Analytical / computational tools ---
+        Tool(
+            name="analyze_sentiment",
+            description=(
+                "Run NLP sentiment analysis on a block of text. "
+                "Returns sentiment score, label, confidence, and key phrases. "
+                "This is a computational tool — no external API calls."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "text": {
+                        "type": "string",
+                        "description": "The text to analyze for sentiment.",
+                    },
+                },
+                "required": ["text"],
+            },
+        ),
+        Tool(
+            name="extract_entities",
+            description=(
+                "Extract named entities from text using NER. "
+                "Identifies organizations, people, technologies, monetary "
+                "amounts, percentages, stock tickers, and dates."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "text": {
+                        "type": "string",
+                        "description": "The text to analyze for entity extraction.",
+                    },
+                },
+                "required": ["text"],
+            },
+        ),
+        Tool(
+            name="compare_sources",
+            description=(
+                "Cross-reference 2-3 articles by URL. Computes content "
+                "similarity, shared themes, and unique angles per source."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "urls": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "2-3 article URLs to compare.",
+                    },
+                },
+                "required": ["urls"],
+            },
+        ),
+        Tool(
+            name="query_past_research",
+            description=(
+                "Search SignalOps archive of past digest reports for "
+                "related research. Shows what was researched previously."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": "Topic or keywords to search past digests.",
+                    },
+                },
+                "required": ["query"],
+            },
+        ),
+        Tool(
+            name="calculate_trend",
+            description=(
+                "Calculate mention frequency trend across 24h/7d/30d windows. "
+                "Returns article counts, daily rates, acceleration, and trend label."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": "The topic to calculate trends for.",
+                    },
+                },
+                "required": ["query"],
+            },
+        ),
     ]
 
 
@@ -361,112 +445,13 @@ async def call_tool(name: str, arguments: dict[str, Any]) -> list[TextContent]:
 
     logger.info("Tool called: %s args=%r", name, arguments)
 
-    result: dict[str, Any]
-
-    if name == "search_news":
-        result = await execute_search_news(
-            query=arguments.get("query", ""),
-            time_range=arguments.get("time_range", "7d"),
-            num_results=arguments.get("num_results", 10),
-            client=_serpapi_client,
-            cache=_search_cache,
-            rate_limiter=_rate_limiter,
-        )
-
-    elif name == "search_company_news":
-        result = await execute_search_company_news(
-            company=arguments.get("company", ""),
-            time_range=arguments.get("time_range", "7d"),
-            topics=arguments.get("topics"),
-            client=_serpapi_client,
-            cache=_search_cache,
-            rate_limiter=_rate_limiter,
-        )
-
-    elif name == "get_article_metadata":
-        result = await execute_get_article_metadata(
-            url=arguments.get("url", ""),
-            client=_serpapi_client,
-            cache=_metadata_cache,
-            rate_limiter=_rate_limiter,
-        )
-
-    elif name == "search_web":
-        result = await execute_search_web(
-            query=arguments.get("query", ""),
-            num_results=arguments.get("num_results", 10),
-            client=_serpapi_client,
-            cache=_search_cache,
-            rate_limiter=_rate_limiter,
-        )
-
-    elif name == "search_scholar":
-        result = await execute_search_scholar(
-            query=arguments.get("query", ""),
-            num_results=arguments.get("num_results", 10),
-            client=_serpapi_client,
-            cache=_search_cache,
-            rate_limiter=_rate_limiter,
-        )
-
-    elif name == "search_finance":
-        result = await execute_search_finance(
-            query=arguments.get("query", ""),
-            client=_serpapi_client,
-            cache=_search_cache,
-            rate_limiter=_rate_limiter,
-        )
-
-    elif name == "find_videos":
-        result = await execute_find_videos(
-            query=arguments.get("query", ""),
-            num_results=arguments.get("num_results", 10),
-            client=_serpapi_client,
-            cache=_search_cache,
-            rate_limiter=_rate_limiter,
-        )
-
-    elif name == "search_github":
-        result = await execute_search_github(
-            query=arguments.get("query", ""),
-            num_results=arguments.get("num_results", 10),
-            cache=_search_cache,
-            rate_limiter=_rate_limiter,
-        )
-
-    elif name == "search_reddit":
-        result = await execute_search_reddit(
-            query=arguments.get("query", ""),
-            subreddit=arguments.get("subreddit"),
-            num_results=arguments.get("num_results", 10),
-            cache=_search_cache,
-            rate_limiter=_rate_limiter,
-        )
-
-    elif name == "search_quora":
-        result = await execute_search_quora(
-            query=arguments.get("query", ""),
-            num_results=arguments.get("num_results", 10),
-            client=_serpapi_client,
-            cache=_search_cache,
-            rate_limiter=_rate_limiter,
-        )
-
-    elif name == "fetch_page":
-        result = await execute_fetch_page(
-            url=arguments.get("url", ""),
-            cache=_metadata_cache,
-            rate_limiter=_rate_limiter,
-        )
-
-    else:
-        result = {
-            "error": {
-                "code": "INTERNAL_ERROR",
-                "message": f"Unknown tool: {name!r}",
-                "details": {},
-                "retry_after_seconds": None,
-            }
-        }
+    result = await dispatch_tool(
+        name,
+        arguments,
+        serpapi_client=_serpapi_client,
+        search_cache=_search_cache,
+        metadata_cache=_metadata_cache,
+        rate_limiter=_rate_limiter,
+    )
 
     return [TextContent(type="text", text=json.dumps(result, indent=2))]

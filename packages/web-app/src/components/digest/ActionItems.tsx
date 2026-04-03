@@ -1,6 +1,5 @@
 /**
- * ActionItems — renders prioritized follow-up actions from a digest.
- * Items are displayed as an ordered list with P0/P1/P2 priority badges.
+ * ActionItems — renders suggested next steps from a digest.
  */
 
 import type { ActionItem } from '../../types/digest';
@@ -14,15 +13,12 @@ interface ActionItemsProps {
 
 const PRIORITY_ORDER = { P0: 0, P1: 1, P2: 2 };
 
-/**
- * Renders an ordered list of action items sorted by priority (P0 first).
- */
 export function ActionItems({ actionItems }: ActionItemsProps) {
   if (actionItems.length === 0) {
     return (
       <section aria-labelledby="action-items-heading">
-        <SectionHeader title="Action Items" count={0} />
-        <p className="text-sm text-gray-500">No action items generated for this digest.</p>
+        <SectionHeader title="Next Steps" count={0} />
+        <p className="text-sm text-gray-500">No follow-ups suggested for this one.</p>
       </section>
     );
   }
@@ -34,9 +30,9 @@ export function ActionItems({ actionItems }: ActionItemsProps) {
   return (
     <section aria-labelledby="action-items-heading">
       <SectionHeader
-        title="Action Items"
+        title="Next Steps"
         count={actionItems.length}
-        description="Prioritized next steps and follow-ups based on what was found"
+        description="Where to go from here"
       />
       <ol className="flex flex-col gap-3" aria-label="Action items list">
         {sorted.map((item, index) => (
@@ -61,7 +57,7 @@ export function ActionItems({ actionItems }: ActionItemsProps) {
 
                   {item.rationale && (
                     <p className="mt-2 text-xs leading-relaxed text-gray-500">
-                      <span className="font-medium text-gray-600">Rationale: </span>
+                      <span className="font-medium text-gray-600">Why: </span>
                       {item.rationale}
                     </p>
                   )}

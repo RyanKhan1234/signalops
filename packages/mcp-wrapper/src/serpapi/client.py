@@ -291,7 +291,7 @@ class SerpApiClient:
 
         return SerpApiResponse.model_validate(raw)
 
-    async def search_videos(
+    async def find_videos(
         self,
         query: str,
         num_results: int = 10,

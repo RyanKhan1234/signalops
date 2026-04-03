@@ -20,14 +20,14 @@ RUN pip install --no-cache-dir pip --upgrade && \
     pip install --no-cache-dir hatchling && \
     pip install --no-cache-dir \
         langchain \
-        langchain-anthropic \
+        langchain-openai \
         langgraph \
         fastapi \
         "uvicorn[standard]" \
         httpx \
         pydantic \
         pydantic-settings \
-        anthropic \
+        openai \
         python-dotenv \
         structlog
 

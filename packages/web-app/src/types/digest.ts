@@ -134,6 +134,10 @@ export interface DigestResponse {
   report_id: string;
   /** 2-3 sentence executive summary of the digest */
   executive_summary: string;
+  /** The agent's own explanation of its research process and key findings */
+  research_summary?: string;
+  /** Step-by-step reasoning the agent used during research */
+  reasoning_steps?: string[];
   /** List of key signals extracted from source articles */
   key_signals: KeySignal[];
   /** List of identified risks */
@@ -154,6 +158,21 @@ export interface DigestResponse {
 export interface DigestRequest {
   /** Natural language research prompt */
   prompt: string;
+  /** User identifier for personalized context */
+  user_id?: string;
+}
+
+/**
+ * User profile stored in the traceability store.
+ * The `context` field personalizes how the agent researches and what it highlights.
+ */
+export interface UserProfile {
+  id: string;
+  user_id: string;
+  display_name: string | null;
+  context: string;
+  updated_at: string;
+  created_at: string;
 }
 
 /**
@@ -195,9 +214,15 @@ export interface PaginatedReports {
 /**
  * A message in the chat thread.
  */
+/** Represents a real-time pipeline progress event during streaming. */
+export interface StreamEvent {
+  event: 'intent' | 'tool_call' | 'tool_result' | 'reasoning' | 'processing' | 'composing' | 'complete' | 'error';
+  data: Record<string, unknown>;
+}
+
 export interface ChatMessage {
   id: string;
-  type: 'user' | 'digest' | 'error';
-  content: string | DigestResponse;
+  type: 'user' | 'digest' | 'error' | 'streaming';
+  content: string | DigestResponse | StreamEvent[];
   timestamp: string;
 }

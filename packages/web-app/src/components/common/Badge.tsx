@@ -1,6 +1,5 @@
 /**
- * Badge component for displaying severity, relevance, priority, and confidence labels.
- * Consistent color coding across all digest sections.
+ * Badge component for displaying importance, urgency, and confidence labels.
  */
 
 import type { RelevanceLevel, SeverityLevel, ConfidenceLevel, PriorityLevel } from '../../types/digest';
@@ -8,23 +7,21 @@ import type { RelevanceLevel, SeverityLevel, ConfidenceLevel, PriorityLevel } fr
 type BadgeVariant = RelevanceLevel | SeverityLevel | ConfidenceLevel | PriorityLevel;
 
 const VARIANT_CLASSES: Record<BadgeVariant, string> = {
-  // Severity / Relevance / Confidence shared levels
   high: 'bg-red-100 text-red-800 ring-1 ring-red-200',
   medium: 'bg-yellow-100 text-yellow-800 ring-1 ring-yellow-200',
   low: 'bg-green-100 text-green-800 ring-1 ring-green-200',
-  // Priority levels
   P0: 'bg-red-100 text-red-800 ring-1 ring-red-200',
   P1: 'bg-orange-100 text-orange-800 ring-1 ring-orange-200',
   P2: 'bg-blue-100 text-blue-800 ring-1 ring-blue-200',
 };
 
 const VARIANT_LABELS: Record<BadgeVariant, string> = {
-  high: 'High',
-  medium: 'Medium',
-  low: 'Low',
-  P0: 'P0 — Immediate',
-  P1: 'P1 — High',
-  P2: 'P2 — Medium',
+  high: 'Important',
+  medium: 'Noteworthy',
+  low: 'FYI',
+  P0: 'Dig in now',
+  P1: 'This week',
+  P2: 'Bookmark',
 };
 
 interface BadgeProps {

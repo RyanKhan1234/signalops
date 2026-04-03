@@ -28,7 +28,10 @@ class _CamelBase(BaseModel):
 # Report schemas
 # ---------------------------------------------------------------------------
 
-DigestType = Literal["daily_digest", "weekly_report", "risk_alert", "competitor_monitor"]
+DigestType = Literal[
+    "daily_digest", "weekly_report", "risk_alert", "competitor_monitor",
+    "latest_news", "deep_dive", "risk_scan", "trend_watch",
+]
 
 
 class CreateReportRequest(_CamelBase):
@@ -248,6 +251,34 @@ class HealthResponse(_CamelBase):
 
     status: Literal["healthy", "unhealthy"]
     db_connected: bool
+
+
+# ---------------------------------------------------------------------------
+# User profile schemas
+# ---------------------------------------------------------------------------
+
+
+class UserProfileUpsert(_CamelBase):
+    """Payload for creating or updating a user profile.
+
+    Attributes:
+        display_name: Optional display name.
+        context: Freeform personal context that shapes the research pipeline.
+    """
+
+    display_name: str | None = Field(default=None, max_length=200)
+    context: str = Field(default="", max_length=10000)
+
+
+class UserProfileResponse(_CamelBase):
+    """Full user profile representation."""
+
+    id: uuid.UUID
+    user_id: str
+    display_name: str | None
+    context: str
+    updated_at: datetime
+    created_at: datetime
 
 
 # ---------------------------------------------------------------------------

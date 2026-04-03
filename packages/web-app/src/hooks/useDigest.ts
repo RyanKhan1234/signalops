@@ -2,7 +2,8 @@
  * useDigest — custom hook for managing the digest request lifecycle.
  *
  * Handles:
- * - Submitting prompts to the API (or mock)
+ * - Submitting prompts via streaming SSE (with fallback to non-streaming)
+ * - Real-time pipeline progress events
  * - Loading state
  * - Error state
  * - Chat message history
@@ -10,8 +11,8 @@
  */
 
 import { useState, useCallback, useRef } from 'react';
-import type { ChatMessage, DigestResponse } from '../types/digest';
-import { submitDigestRequest, DigestApiError } from '../services/api';
+import type { ChatMessage, DigestResponse, StreamEvent } from '../types/digest';
+import { submitDigestStream, submitDigestRequest, DigestApiError } from '../services/api';
 import { getMockDigestResponse } from '../mocks/mockDigestResponse';
 import { generateId } from '../utils/generateId';
 
@@ -20,6 +21,7 @@ const USE_MOCK = import.meta.env['VITE_USE_MOCK_API'] === 'true';
 interface UseDigestReturn {
   messages: ChatMessage[];
   isLoading: boolean;
+  streamEvents: StreamEvent[];
   latestDigest: DigestResponse | null;
   submitPrompt: (prompt: string) => Promise<void>;
   clearMessages: () => void;
@@ -31,18 +33,17 @@ interface UseDigestReturn {
 export function useDigest(): UseDigestReturn {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [streamEvents, setStreamEvents] = useState<StreamEvent[]>([]);
   const [latestDigest, setLatestDigest] = useState<DigestResponse | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
   const submitPrompt = useCallback(async (prompt: string) => {
     if (isLoading) return;
 
-    // Cancel any in-flight request
     abortControllerRef.current?.abort();
     const controller = new AbortController();
     abortControllerRef.current = controller;
 
-    // Add user message
     const userMessage: ChatMessage = {
       id: generateId(),
       type: 'user',
@@ -52,6 +53,7 @@ export function useDigest(): UseDigestReturn {
 
     setMessages((prev) => [...prev, userMessage]);
     setIsLoading(true);
+    setStreamEvents([]);
 
     try {
       let digest: DigestResponse;
@@ -59,10 +61,25 @@ export function useDigest(): UseDigestReturn {
       if (USE_MOCK) {
         digest = await getMockDigestResponse(prompt);
       } else {
-        digest = await submitDigestRequest(
-          { prompt },
-          controller.signal
-        );
+        const request = { prompt, user_id: 'default' };
+        try {
+          digest = await submitDigestStream(
+            request,
+            (event, data) => {
+              const streamEvent: StreamEvent = {
+                event: event as StreamEvent['event'],
+                data,
+              };
+              setStreamEvents((prev) => [...prev, streamEvent]);
+            },
+            controller.signal
+          );
+        } catch (streamErr) {
+          if (streamErr instanceof DigestApiError && streamErr.code === 'REQUEST_CANCELLED') {
+            throw streamErr;
+          }
+          digest = await submitDigestRequest(request, controller.signal);
+        }
       }
 
       const digestMessage: ChatMessage = {
@@ -75,7 +92,6 @@ export function useDigest(): UseDigestReturn {
       setMessages((prev) => [...prev, digestMessage]);
       setLatestDigest(digest);
     } catch (err) {
-      // Don't add error message if the request was deliberately cancelled
       if (err instanceof DigestApiError && err.code === 'REQUEST_CANCELLED') {
         return;
       }
@@ -94,6 +110,7 @@ export function useDigest(): UseDigestReturn {
       setMessages((prev) => [...prev, errorChatMessage]);
     } finally {
       setIsLoading(false);
+      setStreamEvents([]);
     }
   }, [isLoading]);
 
@@ -102,11 +119,13 @@ export function useDigest(): UseDigestReturn {
     setMessages([]);
     setLatestDigest(null);
     setIsLoading(false);
+    setStreamEvents([]);
   }, []);
 
   return {
     messages,
     isLoading,
+    streamEvents,
     latestDigest,
     submitPrompt,
     clearMessages,

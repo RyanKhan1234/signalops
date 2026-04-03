@@ -1,5 +1,5 @@
 /**
- * ExecutiveSummary — displays the top-level digest summary with metadata.
+ * ExecutiveSummary — displays the top-level digest overview with metadata.
  */
 
 import type { DigestResponse } from '../../types/digest';
@@ -23,10 +23,6 @@ interface ExecutiveSummaryProps {
   digest: DigestResponse;
 }
 
-/**
- * Prominent executive summary block shown at the top of every digest.
- * Includes digest type, report ID, generation timestamp, and summary text.
- */
 export function ExecutiveSummary({ digest }: ExecutiveSummaryProps) {
   const typeLabel = DIGEST_TYPE_LABELS[digest.digest_type];
   const typeColor = DIGEST_TYPE_COLORS[digest.digest_type];
@@ -39,11 +35,10 @@ export function ExecutiveSummary({ digest }: ExecutiveSummaryProps) {
   return (
     <section aria-labelledby="exec-summary-heading">
       <SectionHeader
-        title="Executive Summary"
-        description={`Query: "${digest.query}"`}
+        title="Overview"
+        description={`"${digest.query}"`}
       />
 
-      {/* Metadata row */}
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <span
           className={`inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-medium ${typeColor}`}
@@ -51,15 +46,13 @@ export function ExecutiveSummary({ digest }: ExecutiveSummaryProps) {
           {typeLabel}
         </span>
         <span className="text-xs text-gray-400">
-          Generated {generatedAt}
+          {generatedAt}
         </span>
-        <span className="text-xs text-gray-300">|</span>
-        <span className="font-mono text-xs text-gray-400">
+        <span className="font-mono text-xs text-gray-300">
           {digest.report_id}
         </span>
       </div>
 
-      {/* Summary text */}
       <div className="rounded-xl border border-brand-100 bg-brand-50 p-5">
         <p
           id="exec-summary-heading"

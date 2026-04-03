@@ -20,14 +20,19 @@ import { DebugPanel } from './components/debug/DebugPanel';
 import { ChatInput } from './components/chat/ChatInput';
 import { ChatThread } from './components/chat/ChatThread';
 import { ChatSidebar } from './components/chat/ChatSidebar';
+import { UserContextSettings } from './components/settings/UserContextSettings';
 import type { Session } from './components/chat/ChatSidebar';
 import type { ChatMessage } from './types/digest';
 import { generateId } from './utils/generateId';
 
+type AppView = 'chat' | 'settings';
+
 function App() {
-  const { messages, isLoading, latestDigest, submitPrompt, clearMessages } =
+  const { messages, isLoading, streamEvents, latestDigest, submitPrompt, clearMessages } =
     useDigest();
   const { status: saveStatus, save: saveDigest } = useSaveReport();
+
+  const [view, setView] = useState<AppView>('chat');
 
   // Past sessions stored in memory, newest first
   const [sessions, setSessions] = useState<Session[]>([]);
@@ -229,15 +234,23 @@ function App() {
           isCurrentSessionEmpty={isCurrentSessionEmpty}
           onNewChat={handleNewChat}
           onSelectSession={handleSelectSession}
+          onOpenSettings={() => setView('settings')}
         />
 
-        {/* Main area: chat thread (scrollable) */}
-        <div className="flex flex-1 flex-col overflow-hidden">
-          <ChatThread
-            messages={displayMessages}
-            isLoading={isLoading && activeSessionId === null}
-          />
-        </div>
+        {/* Main area: settings or chat thread */}
+        {view === 'settings' ? (
+          <div className="flex flex-1 flex-col overflow-hidden bg-white">
+            <UserContextSettings onBack={() => setView('chat')} />
+          </div>
+        ) : (
+          <div className="flex flex-1 flex-col overflow-hidden">
+            <ChatThread
+              messages={displayMessages}
+              isLoading={isLoading && activeSessionId === null}
+              streamEvents={isLoading && activeSessionId === null ? streamEvents : []}
+            />
+          </div>
+        )}
       </div>
 
       {/* Persistent bottom input — always visible */}

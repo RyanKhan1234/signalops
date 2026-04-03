@@ -70,6 +70,11 @@ class PlannedToolCall(BaseModel):
         "search_reddit",
         "search_quora",
         "fetch_page",
+        "analyze_sentiment",
+        "extract_entities",
+        "compare_sources",
+        "query_past_research",
+        "calculate_trend",
     ]
     arguments: dict[str, str | list[str] | int]
     parallel_group: int = Field(
@@ -154,6 +159,14 @@ class DigestResponse(BaseModel):
     generated_at: datetime
     report_id: str
     executive_summary: str
+    research_summary: str = Field(
+        default="",
+        description="The agent's own explanation of its research process and key findings",
+    )
+    reasoning_steps: list[str] = Field(
+        default_factory=list,
+        description="Step-by-step reasoning the agent used during research",
+    )
     key_signals: list[KeySignal] = Field(default_factory=list)
     risks: list[Risk] = Field(default_factory=list)
     opportunities: list[Opportunity] = Field(default_factory=list)

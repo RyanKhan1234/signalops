@@ -63,7 +63,7 @@ class TraceabilityClient:
             "tool_trace": trace.model_dump(mode="json"),
         }
 
-        await self._post("/reports", payload)
+        await self._post("/api/reports", payload)
 
     async def log_tool_call(self, call: ToolTraceEntry, report_id: str) -> None:
         """Log an individual tool call to the Traceability Store.
@@ -83,7 +83,7 @@ class TraceabilityClient:
             "error": call.error,
         }
 
-        await self._post("/tool-calls", payload)
+        await self._post(f"/api/reports/{report_id}/tool-calls", payload)
 
     async def _post(self, path: str, payload: dict[str, object]) -> None:
         """POST a payload to the Traceability Store. Best-effort, never raises."""

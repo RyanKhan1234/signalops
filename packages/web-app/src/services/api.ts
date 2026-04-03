@@ -7,7 +7,7 @@
  * Base URL is configured via the VITE_API_BASE_URL environment variable.
  */
 
-import type { DigestRequest, DigestResponse, ApiError, PaginatedReports } from '../types/digest';
+import type { DigestRequest, DigestResponse, ApiError, PaginatedReports, UserProfile } from '../types/digest';
 
 const BASE_URL = import.meta.env['VITE_API_BASE_URL'] ?? 'http://localhost:8000';
 
@@ -137,6 +137,111 @@ export async function submitDigestRequest(
   }
 
   return body as DigestResponse;
+}
+
+/**
+ * Submits a prompt to the streaming digest endpoint and returns parsed SSE events
+ * via a callback as they arrive. The final "complete" event contains the full digest.
+ *
+ * @param request - The digest request containing the user's prompt
+ * @param onEvent - Callback invoked for each SSE event
+ * @param signal - Optional AbortSignal to cancel the stream
+ * @returns The final DigestResponse (also delivered via the "complete" event)
+ * @throws DigestApiError on network or stream errors
+ */
+export async function submitDigestStream(
+  request: DigestRequest,
+  onEvent: (event: string, data: Record<string, unknown>) => void,
+  signal?: AbortSignal
+): Promise<DigestResponse> {
+  const requestId = generateRequestId();
+
+  let response: Response;
+  try {
+    response = await fetch(`${BASE_URL}/digest/stream`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'text/event-stream',
+        'X-Request-ID': requestId,
+      },
+      body: JSON.stringify(request),
+      signal,
+    });
+  } catch (err) {
+    if (err instanceof DOMException && err.name === 'AbortError') {
+      throw new DigestApiError('Request was cancelled', 'REQUEST_CANCELLED');
+    }
+    throw new DigestApiError(
+      'Unable to reach the SignalOps API. Please check your connection.',
+      'NETWORK_ERROR',
+      { details: { originalError: String(err) } }
+    );
+  }
+
+  if (!response.ok) {
+    throw new DigestApiError(
+      `API request failed with status ${response.status}`,
+      'HTTP_ERROR',
+      { httpStatus: response.status }
+    );
+  }
+
+  const reader = response.body?.getReader();
+  if (!reader) {
+    throw new DigestApiError('No response body', 'INVALID_RESPONSE');
+  }
+
+  const decoder = new TextDecoder();
+  let buffer = '';
+  let finalDigest: DigestResponse | null = null;
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+
+      const lines = buffer.split('\n');
+      buffer = lines.pop() ?? '';
+
+      let currentEvent = '';
+      let currentData = '';
+
+      for (const line of lines) {
+        if (line.startsWith('event: ')) {
+          currentEvent = line.slice(7).trim();
+        } else if (line.startsWith('data: ')) {
+          currentData = line.slice(6);
+        } else if (line === '' && currentEvent && currentData) {
+          try {
+            const parsed = JSON.parse(currentData);
+            onEvent(currentEvent, parsed);
+
+            if (currentEvent === 'complete') {
+              finalDigest = parsed as DigestResponse;
+            }
+          } catch {
+            // Skip malformed JSON
+          }
+          currentEvent = '';
+          currentData = '';
+        }
+      }
+    }
+  } finally {
+    reader.releaseLock();
+  }
+
+  if (!finalDigest) {
+    throw new DigestApiError(
+      'Stream ended without a complete digest',
+      'INCOMPLETE_STREAM'
+    );
+  }
+
+  return finalDigest;
 }
 
 /**
@@ -343,4 +448,71 @@ export async function getReportById(reportId: string): Promise<DigestResponse> {
 
   const detail = body as { digest_json: DigestResponse };
   return detail.digest_json;
+}
+
+
+/**
+ * Fetches a user profile from the Traceability Store.
+ * Returns null if the profile doesn't exist (404).
+ */
+export async function getUserProfile(userId: string): Promise<UserProfile | null> {
+  const url = new URL(
+    `${HISTORY_BASE_URL}/api/profiles/${encodeURIComponent(userId)}`,
+    window.location.origin,
+  );
+
+  try {
+    const response = await fetch(url.toString(), {
+      method: 'GET',
+      headers: { Accept: 'application/json' },
+    });
+
+    if (response.status === 404) return null;
+
+    if (!response.ok) {
+      throw new DigestApiError(
+        `Profile API returned status ${response.status}`,
+        'HTTP_ERROR',
+        { httpStatus: response.status },
+      );
+    }
+
+    return (await response.json()) as UserProfile;
+  } catch (err) {
+    if (err instanceof DigestApiError) throw err;
+    return null;
+  }
+}
+
+
+/**
+ * Creates or updates a user profile in the Traceability Store.
+ */
+export async function saveUserProfile(
+  userId: string,
+  data: { display_name?: string | null; context: string },
+): Promise<UserProfile> {
+  const url = new URL(
+    `${HISTORY_BASE_URL}/api/profiles/${encodeURIComponent(userId)}`,
+    window.location.origin,
+  );
+
+  const response = await fetch(url.toString(), {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    throw new DigestApiError(
+      `Failed to save profile (HTTP ${response.status})`,
+      'HTTP_ERROR',
+      { httpStatus: response.status },
+    );
+  }
+
+  return (await response.json()) as UserProfile;
 }

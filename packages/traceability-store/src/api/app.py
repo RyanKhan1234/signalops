@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.api.routes import metrics_router, reports_router
+from src.api.routes import metrics_router, profiles_router, reports_router
 from src.api.schemas import HealthResponse
 from src.db.engine import get_engine, get_session
 from src.db.models import Base
@@ -54,6 +54,7 @@ def create_app() -> FastAPI:
     # Register routers
     app.include_router(reports_router)
     app.include_router(metrics_router)
+    app.include_router(profiles_router)
 
     # ── Health check ───────────────────────────────────────────────────────
     # The health endpoint uses the injected session so that in tests it

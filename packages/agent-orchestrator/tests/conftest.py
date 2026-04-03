@@ -17,7 +17,7 @@ def make_article(
     url: str = "https://example.com/article-1",
     source: str = "TechCrunch",
     published_date: str = "2026-03-01",
-    snippet: str = "This is a test snippet about competitive intelligence.",
+    snippet: str = "This is a test snippet about research topic.",
 ) -> Article:
     """Factory function for creating test Article objects."""
     return Article(
@@ -31,7 +31,7 @@ def make_article(
 
 def make_mcp_result(
     articles: list[Article] | None = None,
-    query: str = "Walmart Connect",
+    query: str = "OpenAI",
     total_results: int = 2,
     cached: bool = False,
     request_id: str = "req_test_123",
@@ -40,13 +40,13 @@ def make_mcp_result(
     if articles is None:
         articles = [
             make_article(
-                title="Walmart Connect Expands Self-Serve Ad Platform",
+                title="OpenAI Expands Self-Serve Ad Platform",
                 url="https://example.com/walmart-connect-self-serve",
-                snippet="Walmart Connect announced major expansions to its self-serve advertising platform, "
+                snippet="OpenAI announced major expansions to its self-serve advertising platform, "
                 "adding new targeting options and automated bidding.",
             ),
             make_article(
-                title="Walmart Connect Q1 2026 Revenue Up 35%",
+                title="OpenAI Q1 2026 Revenue Up 35%",
                 url="https://example.com/walmart-connect-q1-2026",
                 snippet="Walmart's advertising business reported strong Q1 2026 results with revenue "
                 "growing 35% year-over-year driven by Connect platform adoption.",
@@ -66,12 +66,12 @@ def sample_articles() -> list[Article]:
     """Fixture providing a sample list of articles for testing."""
     return [
         make_article(
-            title="Walmart Connect Expands Self-Serve Ad Platform",
+            title="OpenAI Expands Self-Serve Ad Platform",
             url="https://example.com/walmart-connect-self-serve",
-            snippet="Walmart Connect announced major expansions to its self-serve advertising platform.",
+            snippet="OpenAI announced major expansions to its self-serve advertising platform.",
         ),
         make_article(
-            title="Walmart Connect Q1 2026 Revenue Up 35%",
+            title="OpenAI Q1 2026 Revenue Up 35%",
             url="https://example.com/walmart-connect-q1-2026",
             snippet="Walmart's advertising business reported strong Q1 2026 results.",
         ),
@@ -79,7 +79,7 @@ def sample_articles() -> list[Article]:
             title="Retail Media Network Competition Intensifies",
             url="https://example.com/retail-media-competition",
             source="AdAge",
-            snippet="Competition in the retail media network space is intensifying with Amazon, "
+            snippet="Competition in the AI research network space is intensifying with Amazon, "
             "Walmart, and Target all expanding their ad platforms.",
         ),
     ]

@@ -1,5 +1,5 @@
 /**
- * Opportunities — renders identified strategic opportunities with confidence indicators.
+ * Opportunities — renders interesting angles worth exploring further.
  */
 
 import type { Opportunity } from '../../types/digest';
@@ -17,15 +17,12 @@ const CONFIDENCE_ICON: Record<Opportunity['confidence'], string> = {
   low: '↓',
 };
 
-/**
- * Renders a list of opportunities with confidence levels and source references.
- */
 export function Opportunities({ opportunities }: OpportunitiesProps) {
   if (opportunities.length === 0) {
     return (
       <section aria-labelledby="opportunities-heading">
-        <SectionHeader title="Opportunities" count={0} />
-        <p className="text-sm text-gray-500">No opportunities identified for this query.</p>
+        <SectionHeader title="Worth Exploring" count={0} />
+        <p className="text-sm text-gray-500">No standout angles this time around.</p>
       </section>
     );
   }
@@ -38,9 +35,9 @@ export function Opportunities({ opportunities }: OpportunitiesProps) {
   return (
     <section aria-labelledby="opportunities-heading">
       <SectionHeader
-        title="Opportunities"
+        title="Worth Exploring"
         count={opportunities.length}
-        description="Strategic openings and potential advantages identified from source articles"
+        description="Interesting angles and threads to pull on"
       />
       <ul className="flex flex-col gap-3" aria-label="Opportunities list">
         {sorted.map((opportunity, index) => (
@@ -58,7 +55,7 @@ export function Opportunities({ opportunities }: OpportunitiesProps) {
                     {opportunity.description}
                   </p>
                 </div>
-                <Badge variant={opportunity.confidence} prefix="Confidence" className="flex-shrink-0" />
+                <Badge variant={opportunity.confidence} className="flex-shrink-0" />
               </div>
 
               {opportunity.source_urls.length > 0 && (

@@ -1,12 +1,13 @@
 """Article processing pipeline for the Agent Orchestrator.
 
-Processes raw article lists through:
+All LLM calls go through LangChain's ChatOpenAI for consistent model
+abstraction. Processes raw article lists through:
 1. Deduplication (by URL)
 2. Clustering (LLM-based topic grouping)
-3. Signal extraction
-4. Risk identification
-5. Opportunity detection
-6. Action item generation
+3. Key finding extraction
+4. Concern identification
+5. Interesting angle detection
+6. Next step generation
 """
 
 from __future__ import annotations
@@ -16,7 +17,8 @@ import json
 import logging
 import re
 
-from anthropic import AsyncAnthropic
+from langchain_core.messages import HumanMessage
+from langchain_openai import ChatOpenAI
 
 from src.config import settings
 from src.models.digest import (
@@ -30,7 +32,14 @@ from src.models.digest import (
 
 logger = logging.getLogger(__name__)
 
-_FAST_MODEL = "claude-haiku-4-5-20251001"  # for intermediate processing steps
+
+def _get_llm() -> ChatOpenAI:
+    """Get a LangChain ChatOpenAI instance for processing steps."""
+    return ChatOpenAI(
+        model=settings.research_model,
+        api_key=settings.openai_api_key,
+        temperature=0.1,
+    )
 
 
 def _extract_json(text: str) -> str:
@@ -44,43 +53,43 @@ def _extract_json(text: str) -> str:
 # Prompt templates
 # ---------------------------------------------------------------------------
 
-CLUSTERING_PROMPT = """You are a research analyst. Given a list of news article titles and snippets,
-group them into thematic clusters. Return ONLY valid JSON — no preamble, no markdown.
+CLUSTERING_PROMPT = """Given a list of article titles and snippets, group them into thematic clusters.
+Return ONLY valid JSON — no preamble, no markdown.
 
 Output format:
-{
+{{
   "clusters": [
-    {
+    {{
       "theme": "<concise theme name, max 6 words>",
       "article_indices": [<0-based indices of articles in this cluster>]
-    }
+    }}
   ]
-}
+}}
 
 Rules:
 - Create 2-6 clusters maximum
 - Every article must belong to exactly one cluster
-- Use descriptive themes based on what the articles are actually about (e.g., "Model Releases", "Regulatory Developments", "Industry Reactions")
-- If there are fewer than 3 articles, create one cluster called "General News"
+- Use descriptive themes based on what the articles are actually about
+- If there are fewer than 3 articles, create one cluster called "General"
 
 Articles:
 {articles_json}"""
 
-SIGNAL_EXTRACTION_PROMPT = """You are a research analyst. Given a theme and a set of article titles
-and snippets grouped under that theme, extract the single most important signal or development.
+SIGNAL_EXTRACTION_PROMPT = """Given a theme and a set of article titles and snippets, extract the
+single most important finding or development.
 
 Return ONLY valid JSON — no preamble, no markdown.
 
 Output format:
-{
-  "signal": "<1-2 sentence summary of what happened and why it matters>",
+{{
+  "signal": "<1-2 sentence summary of what happened and why it's interesting>",
   "relevance": "<high|medium|low>",
   "best_article_index": <0-based index of the most relevant article in this cluster>
-}
+}}
 
 Rules:
-- The signal MUST be directly supported by the article content — no extrapolation
-- relevance = high if this is a significant development worth acting on
+- The finding MUST be directly supported by the article content — no extrapolation
+- relevance = high if this is a significant development you'd want to know about
 - relevance = medium if it provides useful context or background
 - relevance = low if it is tangentially related
 
@@ -88,70 +97,70 @@ Theme: {theme}
 Articles:
 {articles_json}"""
 
-RISK_OPPORTUNITY_PROMPT = """You are a research analyst. Given a list of article signals,
-identify noteworthy risks or concerns and potential opportunities.
+RISK_OPPORTUNITY_PROMPT = """Given the findings below, identify things to watch out for and
+interesting angles worth exploring further.
 
 Return ONLY valid JSON — no preamble, no markdown.
 
 Output format:
-{
+{{
   "risks": [
-    {
-      "description": "<1-2 sentence description of the risk or concern>",
+    {{
+      "description": "<1-2 sentence description of what to watch out for>",
       "severity": "<high|medium|low>",
-      "signal_indices": [<0-based indices of signals that support this risk>]
-    }
+      "signal_indices": [<0-based indices of findings that support this>]
+    }}
   ],
   "opportunities": [
-    {
-      "description": "<1-2 sentence description of the opportunity>",
+    {{
+      "description": "<1-2 sentence description of an interesting thread to pull on>",
       "confidence": "<high|medium|low>",
-      "signal_indices": [<0-based indices of signals that support this opportunity>]
-    }
+      "signal_indices": [<0-based indices of findings that support this>]
+    }}
   ]
-}
+}}
 
 Rules:
-- Only include risks/opportunities that are DIRECTLY supported by the provided signals
-- If no risks are evident, return an empty risks array
-- If no opportunities are evident, return an empty opportunities array
-- Maximum 5 risks and 5 opportunities
-- Descriptions must reference specific facts from the signals, not generic statements
+- Only include items DIRECTLY supported by the provided findings
+- If nothing concerning stands out, return an empty risks array
+- If no interesting angles, return an empty opportunities array
+- Maximum 5 of each
+- Be specific — reference actual facts from the findings, not generic observations
 
-Signals:
+Findings:
 {signals_json}"""
 
-ACTION_ITEM_PROMPT = """You are a research analyst. Given a list of risks and opportunities,
-generate a prioritized list of follow-up actions or things to watch.
+ACTION_ITEM_PROMPT = """Given the concerns and interesting angles below, suggest concrete next steps
+for someone researching this topic.
 
 Return ONLY valid JSON — no preamble, no markdown.
 
 Output format:
-{
+{{
   "action_items": [
-    {
+    {{
       "action": "<specific, actionable step — start with a verb>",
       "priority": "<P0|P1|P2>",
-      "rationale": "<1 sentence explaining why this action and priority>"
-    }
+      "rationale": "<1 sentence explaining why>"
+    }}
   ]
-}
+}}
 
 Priority definitions:
-- P0: Act now (today) — addresses something time-sensitive or high-stakes
-- P1: This week — addresses a developing situation worth staying on top of
-- P2: Track — worth monitoring but no immediate action needed
+- P0: Dig into this now — time-sensitive or particularly important
+- P1: Get to this week — developing situation worth following up on
+- P2: Bookmark for later — worth tracking but not urgent
 
 Rules:
-- Maximum 8 action items
-- Every action must reference a specific risk or opportunity
-- Actions should be practical and relevant to someone doing personal research
-- If there are no risks or opportunities, return an empty action_items array
+- Maximum 8 items
+- Every item must reference a specific concern or angle from the input
+- Think practically — what would someone actually do with this information?
+- If there's nothing actionable, return an empty action_items array
 
-Risks:
+Concerns:
 {risks_json}
 
-Opportunities:
+Interesting angles:
 {opportunities_json}"""
 
 
@@ -161,14 +170,7 @@ Opportunities:
 
 
 def deduplicate_articles(articles: list[Article]) -> list[Article]:
-    """Remove duplicate articles by URL, preserving first occurrence order.
-
-    Args:
-        articles: Raw list of articles from all tool calls (may contain duplicates).
-
-    Returns:
-        Deduplicated list of articles.
-    """
+    """Remove duplicate articles by URL, preserving first occurrence order."""
     seen_urls: set[str] = set()
     unique: list[Article] = []
     for article in articles:
@@ -180,39 +182,24 @@ def deduplicate_articles(articles: list[Article]) -> list[Article]:
 
 
 async def cluster_articles(articles: list[Article]) -> list[ArticleCluster]:
-    """Group articles into thematic clusters using LLM classification.
-
-    Args:
-        articles: Deduplicated list of articles to cluster.
-
-    Returns:
-        List of ArticleCluster objects, each with a theme and article list.
-    """
+    """Group articles into thematic clusters using LLM classification."""
     if not articles:
         return []
 
-    # If very few articles, skip clustering
     if len(articles) <= 2:
         return [ArticleCluster(theme="General News", articles=articles)]
 
-    client = AsyncAnthropic(api_key=settings.anthropic_api_key)
+    llm = _get_llm()
 
-    # Build a compact representation of articles for the prompt
     articles_data = [
         {"index": i, "title": a.title, "snippet": a.snippet[:200], "source": a.source}
         for i, a in enumerate(articles)
     ]
     articles_json = json.dumps(articles_data, indent=2)
-
     prompt = CLUSTERING_PROMPT.replace("{articles_json}", articles_json)
 
-    message = await client.messages.create(
-        model=_FAST_MODEL,
-        max_tokens=4096,
-        messages=[{"role": "user", "content": prompt}],
-    )
-
-    raw = message.content[0].text.strip()
+    response = await llm.ainvoke([HumanMessage(content=prompt)])
+    raw = response.content.strip() if isinstance(response.content, str) else str(response.content)
     logger.debug("Clustering response: %s", raw[:500])
 
     try:
@@ -236,7 +223,6 @@ async def cluster_articles(articles: list[Article]) -> list[ArticleCluster]:
         if cluster_articles:
             clusters.append(ArticleCluster(theme=theme, articles=cluster_articles))
 
-    # Any articles not assigned to a cluster go into "Other"
     unassigned = [a for i, a in enumerate(articles) if i not in used_indices]
     if unassigned:
         clusters.append(ArticleCluster(theme="Other", articles=unassigned))
@@ -246,7 +232,7 @@ async def cluster_articles(articles: list[Article]) -> list[ArticleCluster]:
 
 
 async def _extract_signal_for_cluster(
-    client: AsyncAnthropic, cluster: ArticleCluster
+    llm: ChatOpenAI, cluster: ArticleCluster
 ) -> KeySignal | None:
     """Extract signal for a single cluster. Returns None on failure."""
     if not cluster.articles:
@@ -262,12 +248,8 @@ async def _extract_signal_for_cluster(
     )
 
     try:
-        message = await client.messages.create(
-            model=_FAST_MODEL,
-            max_tokens=512,
-            messages=[{"role": "user", "content": prompt}],
-        )
-        raw = message.content[0].text.strip()
+        response = await llm.ainvoke([HumanMessage(content=prompt)])
+        raw = response.content.strip() if isinstance(response.content, str) else str(response.content)
         parsed = json.loads(_extract_json(raw))
 
         best_idx = parsed.get("best_article_index", 0)
@@ -295,22 +277,13 @@ async def _extract_signal_for_cluster(
 
 
 async def extract_signals(clusters: list[ArticleCluster]) -> list[KeySignal]:
-    """Extract the key business signal from each article cluster.
-
-    All clusters are processed concurrently via asyncio.gather().
-
-    Args:
-        clusters: List of article clusters with themes.
-
-    Returns:
-        List of KeySignal objects, one per cluster (or fewer if extraction fails).
-    """
+    """Extract the key business signal from each article cluster."""
     if not clusters:
         return []
 
-    client = AsyncAnthropic(api_key=settings.anthropic_api_key)
+    llm = _get_llm()
 
-    tasks = [_extract_signal_for_cluster(client, cluster) for cluster in clusters]
+    tasks = [_extract_signal_for_cluster(llm, cluster) for cluster in clusters]
     results = await asyncio.gather(*tasks, return_exceptions=True)
 
     signals: list[KeySignal] = []
@@ -320,7 +293,6 @@ async def extract_signals(clusters: list[ArticleCluster]) -> list[KeySignal]:
         elif isinstance(r, Exception):
             logger.warning("Signal extraction task raised an exception: %s", r)
 
-    # Sort by relevance: high > medium > low
     relevance_order = {"high": 0, "medium": 1, "low": 2}
     signals.sort(key=lambda s: relevance_order.get(s.relevance, 1))
     logger.info("Extracted %d signals from %d clusters", len(signals), len(clusters))
@@ -330,23 +302,13 @@ async def extract_signals(clusters: list[ArticleCluster]) -> list[KeySignal]:
 async def identify_risks_and_opportunities(
     signals: list[KeySignal],
     all_articles: list[Article],
+    user_context: str = "",
 ) -> tuple[list[Risk], list[Opportunity]]:
-    """Identify risks, concerns, and opportunities from extracted signals.
-
-    Args:
-        signals: List of extracted key signals.
-        all_articles: All deduplicated articles (for source URL resolution).
-
-    Returns:
-        Tuple of (risks, opportunities).
-    """
+    """Identify risks, concerns, and opportunities from extracted signals."""
     if not signals:
         return [], []
 
-    client = AsyncAnthropic(api_key=settings.anthropic_api_key)
-
-    # Build a URL index for quick source lookup
-    url_by_title: dict[str, str] = {a.title: a.url for a in all_articles}
+    llm = _get_llm()
 
     signals_data = [
         {
@@ -358,21 +320,22 @@ async def identify_risks_and_opportunities(
         for i, s in enumerate(signals)
     ]
     signals_json = json.dumps(signals_data, indent=2)
-    prompt = RISK_OPPORTUNITY_PROMPT.replace("{signals_json}", signals_json)
+    context_prefix = ""
+    if user_context.strip():
+        context_prefix = (
+            f"The person reading this research:\n{user_context.strip()}\n\n"
+            f"Keep this in mind when deciding what matters to them.\n\n"
+        )
+    prompt = context_prefix + RISK_OPPORTUNITY_PROMPT.replace("{signals_json}", signals_json)
 
     try:
-        message = await client.messages.create(
-            model=_FAST_MODEL,
-            max_tokens=1024,
-            messages=[{"role": "user", "content": prompt}],
-        )
-        raw = message.content[0].text.strip()
+        response = await llm.ainvoke([HumanMessage(content=prompt)])
+        raw = response.content.strip() if isinstance(response.content, str) else str(response.content)
         parsed = json.loads(_extract_json(raw))
     except (json.JSONDecodeError, Exception) as exc:
         logger.warning("Failed to identify risks/opportunities: %s", exc)
         return [], []
 
-    # Build risks
     risks: list[Risk] = []
     for r in parsed.get("risks", []):
         indices = r.get("signal_indices", [])
@@ -396,7 +359,6 @@ async def identify_risks_and_opportunities(
                 )
             )
 
-    # Build opportunities
     opportunities: list[Opportunity] = []
     for o in parsed.get("opportunities", []):
         indices = o.get("signal_indices", [])
@@ -429,20 +391,13 @@ async def identify_risks_and_opportunities(
 async def generate_action_items(
     risks: list[Risk],
     opportunities: list[Opportunity],
+    user_context: str = "",
 ) -> list[ActionItem]:
-    """Synthesize prioritized action items from risks and opportunities.
-
-    Args:
-        risks: Identified risks and concerns.
-        opportunities: Identified strategic opportunities.
-
-    Returns:
-        Ordered list of ActionItem objects sorted by priority.
-    """
+    """Synthesize prioritized action items from risks and opportunities."""
     if not risks and not opportunities:
         return []
 
-    client = AsyncAnthropic(api_key=settings.anthropic_api_key)
+    llm = _get_llm()
 
     risks_data = [
         {"index": i, "description": r.description, "severity": r.severity}
@@ -452,15 +407,17 @@ async def generate_action_items(
         {"index": i, "description": o.description, "confidence": o.confidence}
         for i, o in enumerate(opportunities)
     ]
-    prompt = ACTION_ITEM_PROMPT.replace("{risks_json}", json.dumps(risks_data, indent=2)).replace("{opportunities_json}", json.dumps(opps_data, indent=2))
+    context_prefix = ""
+    if user_context.strip():
+        context_prefix = (
+            f"The person reading this research:\n{user_context.strip()}\n\n"
+            f"Suggest next steps that make sense for them specifically.\n\n"
+        )
+    prompt = context_prefix + ACTION_ITEM_PROMPT.replace("{risks_json}", json.dumps(risks_data, indent=2)).replace("{opportunities_json}", json.dumps(opps_data, indent=2))
 
     try:
-        message = await client.messages.create(
-            model=_FAST_MODEL,
-            max_tokens=1024,
-            messages=[{"role": "user", "content": prompt}],
-        )
-        raw = message.content[0].text.strip()
+        response = await llm.ainvoke([HumanMessage(content=prompt)])
+        raw = response.content.strip() if isinstance(response.content, str) else str(response.content)
         parsed = json.loads(_extract_json(raw))
     except (json.JSONDecodeError, Exception) as exc:
         logger.warning("Failed to generate action items: %s", exc)
@@ -484,7 +441,6 @@ async def generate_action_items(
                 )
             )
 
-    # Sort by priority
     action_items.sort(key=lambda a: priority_order.get(a.priority, 2))
     logger.info("Generated %d action items", len(action_items))
     return action_items

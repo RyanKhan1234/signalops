@@ -1,5 +1,5 @@
 /**
- * Risks — renders identified risks with severity indicators and source links.
+ * Risks — renders things to watch out for, with impact indicators and source links.
  */
 
 import type { Risk } from '../../types/digest';
@@ -17,20 +17,16 @@ const SEVERITY_BORDER: Record<Risk['severity'], string> = {
   low: 'border-l-4 border-l-green-400',
 };
 
-/**
- * Renders a list of identified risks sorted by severity (high first).
- */
 export function Risks({ risks }: RisksProps) {
   if (risks.length === 0) {
     return (
       <section aria-labelledby="risks-heading">
-        <SectionHeader title="Risks" count={0} />
-        <p className="text-sm text-gray-500">No risks identified for this query.</p>
+        <SectionHeader title="Heads Up" count={0} />
+        <p className="text-sm text-gray-500">Nothing concerning came up this time.</p>
       </section>
     );
   }
 
-  // Sort: high → medium → low
   const ORDER = { high: 0, medium: 1, low: 2 };
   const sorted = [...risks].sort(
     (a, b) => ORDER[a.severity] - ORDER[b.severity]
@@ -39,9 +35,9 @@ export function Risks({ risks }: RisksProps) {
   return (
     <section aria-labelledby="risks-heading">
       <SectionHeader
-        title="Risks"
+        title="Heads Up"
         count={risks.length}
-        description="Competitive threats and strategic concerns detected in source articles"
+        description="Things worth keeping an eye on — potential concerns or shifts"
       />
       <ul className="flex flex-col gap-3" aria-label="Risk list">
         {sorted.map((risk, index) => (
@@ -51,7 +47,7 @@ export function Risks({ risks }: RisksProps) {
                 <p className="text-sm leading-relaxed text-gray-800">
                   {risk.description}
                 </p>
-                <Badge variant={risk.severity} prefix="Severity" className="flex-shrink-0" />
+                <Badge variant={risk.severity} className="flex-shrink-0" />
               </div>
 
               {risk.source_urls.length > 0 && (

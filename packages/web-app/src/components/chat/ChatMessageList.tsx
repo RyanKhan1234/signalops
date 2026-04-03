@@ -67,7 +67,7 @@ export function ChatMessageList({ messages, isLoading }: ChatMessageListProps) {
             </div>
           )}
 
-          {message.type === 'digest' && typeof message.content === 'object' && (
+          {message.type === 'digest' && typeof message.content === 'object' && !Array.isArray(message.content) && (
             <div className="flex justify-start">
               <div className="w-full">
                 <div className="mb-2 flex items-center gap-2">

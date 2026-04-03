@@ -27,9 +27,16 @@ from src.api.schemas import (
     ToolCallResponse,
     ToolErrorStat,
     ToolLatencyResponse,
+    UserProfileResponse,
+    UserProfileUpsert,
 )
 from src.db.engine import get_session
-from src.db.repositories import ReportRepository, SourceRepository, ToolCallRepository
+from src.db.repositories import (
+    ReportRepository,
+    SourceRepository,
+    ToolCallRepository,
+    UserProfileRepository,
+)
 
 # ---------------------------------------------------------------------------
 # Routers
@@ -37,6 +44,7 @@ from src.db.repositories import ReportRepository, SourceRepository, ToolCallRepo
 
 reports_router = APIRouter(prefix="/api/reports", tags=["reports"])
 metrics_router = APIRouter(prefix="/api/metrics", tags=["metrics"])
+profiles_router = APIRouter(prefix="/api/profiles", tags=["profiles"])
 
 # Session dependency alias
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
@@ -345,3 +353,54 @@ async def error_rate(
         error_rate=stats["error_rate"],
         by_tool=[ToolErrorStat(**t) for t in stats["by_tool"]],
     )
+
+
+# ---------------------------------------------------------------------------
+# User profile endpoints
+# ---------------------------------------------------------------------------
+
+
+@profiles_router.get(
+    "/{user_id}",
+    response_model=UserProfileResponse,
+    responses=_NOT_FOUND_RESPONSES,
+    summary="Get a user profile",
+    description="Returns the user profile for the given user_id, or 404 if none exists.",
+)
+async def get_user_profile(user_id: str, session: SessionDep) -> UserProfileResponse:
+    repo = UserProfileRepository(session)
+    profile = await repo.get_by_user_id(user_id)
+    if not profile:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={
+                "error": {
+                    "code": "PROFILE_NOT_FOUND",
+                    "message": f"No profile found for user '{user_id}'.",
+                    "details": {"user_id": user_id},
+                    "retry_after_seconds": None,
+                }
+            },
+        )
+    return UserProfileResponse.model_validate(profile)
+
+
+@profiles_router.put(
+    "/{user_id}",
+    response_model=UserProfileResponse,
+    summary="Create or update a user profile",
+    description="Upserts the user profile. Creates if it doesn't exist, updates if it does.",
+)
+async def upsert_user_profile(
+    user_id: str,
+    payload: UserProfileUpsert,
+    session: SessionDep,
+) -> UserProfileResponse:
+    repo = UserProfileRepository(session)
+    profile = await repo.upsert(
+        user_id=user_id,
+        display_name=payload.display_name,
+        context=payload.context,
+    )
+    await session.commit()
+    return UserProfileResponse.model_validate(profile)

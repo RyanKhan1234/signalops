@@ -1,10 +1,70 @@
-node_modules/
+# ─── Python ───────────────────────────────────────────────────────────────────
 __pycache__/
-*.pyc
-.env
-.env.local
+*.py[cod]
+*$py.class
+*.pyo
+*.pyd
+.Python
+.venv/
+venv/
+env/
+*.egg-info/
+*.egg
+.eggs/
 dist/
 build/
-.venv/
-*.egg-info/
+*.dist-info/
 .pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+*.log
+pip-log.txt
+
+# ─── Node / TypeScript ────────────────────────────────────────────────────────
+node_modules/
+dist/
+build/
+.cache/
+*.tsbuildinfo
+coverage/
+.nyc_output/
+
+# ─── Environment & Secrets ────────────────────────────────────────────────────
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+*.p12
+
+# ─── Docker ───────────────────────────────────────────────────────────────────
+# (docker-compose.override.yml is intentionally committed)
+
+# ─── Databases ────────────────────────────────────────────────────────────────
+*.db
+*.sqlite
+*.sqlite3
+
+# ─── IDE & Editor ─────────────────────────────────────────────────────────────
+.idea/
+.vscode/
+*.swp
+*.swo
+*.suo
+.project
+.classpath
+
+# ─── OS ───────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# ─── Temp ─────────────────────────────────────────────────────────────────────
+tmp/
+.tmp/
+*.tmp

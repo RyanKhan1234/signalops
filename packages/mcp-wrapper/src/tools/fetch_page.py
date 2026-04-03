@@ -156,7 +156,7 @@ async def execute_fetch_page(
     try:
         title = _extract_title(raw_html) or url
         text_content = _extract_text(raw_html)
-        snippet = text_content[:500]
+        snippet = text_content[:1500]
         domain = _extract_domain(url)
         fetched_at = datetime.now(tz=timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     except Exception as exc:

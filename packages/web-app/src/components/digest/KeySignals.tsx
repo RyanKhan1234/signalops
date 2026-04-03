@@ -1,6 +1,5 @@
 /**
- * KeySignals — renders the list of key signals extracted from source articles.
- * Each signal shows the signal text, source link, date, and relevance badge.
+ * KeySignals — renders the list of key findings extracted from source articles.
  */
 
 import type { KeySignal } from '../../types/digest';
@@ -13,15 +12,12 @@ interface KeySignalsProps {
   signals: KeySignal[];
 }
 
-/**
- * Renders a ranked list of key signals with source attribution.
- */
 export function KeySignals({ signals }: KeySignalsProps) {
   if (signals.length === 0) {
     return (
       <section aria-labelledby="signals-heading">
-        <SectionHeader title="Key Signals" count={0} />
-        <p className="text-sm text-gray-500">No key signals identified for this query.</p>
+        <SectionHeader title="Key Findings" count={0} />
+        <p className="text-sm text-gray-500">Nothing notable turned up for this query.</p>
       </section>
     );
   }
@@ -29,9 +25,9 @@ export function KeySignals({ signals }: KeySignalsProps) {
   return (
     <section aria-labelledby="signals-heading">
       <SectionHeader
-        title="Key Signals"
+        title="Key Findings"
         count={signals.length}
-        description="Notable events and developments extracted from source articles"
+        description="The most interesting things that came up in the research"
       />
       <ol className="flex flex-col gap-3" aria-label="Key signals list">
         {signals.map((signal, index) => (
@@ -52,7 +48,7 @@ export function KeySignals({ signals }: KeySignalsProps) {
                   </p>
 
                   <div className="mt-2 flex flex-wrap items-center gap-2">
-                    <Badge variant={signal.relevance} prefix="Relevance" />
+                    <Badge variant={signal.relevance} />
 
                     <a
                       href={signal.source_url}

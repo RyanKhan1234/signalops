@@ -106,7 +106,7 @@ def create_app() -> FastAPI:
             version="0.1.0",
             mcp_wrapper_url=settings.mcp_wrapper_url,
             traceability_store_url=settings.traceability_store_url,
-            model=settings.anthropic_model,
+            model=settings.openai_model,
         )
 
     @app.on_event("shutdown")

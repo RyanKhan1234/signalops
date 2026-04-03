@@ -14,6 +14,7 @@ from sqlalchemy import (
     Index,
     Integer,
     JSON,
+    String,
     Text,
     Uuid,
     func,
@@ -150,3 +151,29 @@ class Source(Base):
     report: Mapped["Report"] = relationship("Report", back_populates="sources")
 
     __table_args__ = (Index("ix_sources_report_id_url", "report_id", "url"),)
+
+
+class UserProfile(Base):
+    """Stores user context that personalizes the research pipeline.
+
+    Each user gets one profile row.  The freeform ``context`` field is injected
+    into every LLM prompt so that tool selection, findings, and next-steps are
+    tailored to who's asking.
+    """
+
+    __tablename__ = "user_profiles"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    user_id: Mapped[str] = mapped_column(
+        String(100), unique=True, nullable=False, index=True
+    )
+    display_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    context: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )

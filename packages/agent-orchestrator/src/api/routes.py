@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+import asyncio
+import json
 import logging
 import uuid
 
 from fastapi import APIRouter, HTTPException, Request, Response
+from fastapi.responses import StreamingResponse
 
 from src.agent.orchestrator import run_pipeline
 from src.api.schemas import DigestRequest, ErrorDetail, ErrorResponse, HealthResponse
@@ -71,7 +74,11 @@ async def create_digest(
     )
 
     try:
-        digest = await run_pipeline(prompt=body.prompt, correlation_id=correlation_id)
+        digest = await run_pipeline(
+            prompt=body.prompt,
+            correlation_id=correlation_id,
+            user_id=body.user_id,
+        )
         return digest
 
     except RuntimeError as exc:
@@ -123,3 +130,74 @@ async def create_digest(
                 )
             ).model_dump(),
         ) from exc
+
+
+@router.post(
+    "/digest/stream",
+    tags=["Digest"],
+    summary="Generate a digest with real-time SSE progress events",
+)
+async def create_digest_stream(
+    body: DigestRequest,
+    request: Request,
+) -> StreamingResponse:
+    """Generate a structured research digest with real-time streaming updates.
+
+    Returns a Server-Sent Events stream with progress events as the pipeline
+    runs, ending with a ``complete`` event containing the full digest.
+    """
+    correlation_id = request.headers.get(settings.correlation_id_header, str(uuid.uuid4()))
+
+    logger.info(
+        "POST /digest/stream correlation_id=%s prompt='%s'",
+        correlation_id,
+        body.prompt[:80],
+    )
+
+    event_queue: asyncio.Queue[dict | None] = asyncio.Queue()
+
+    def on_event(event_type: str, data: dict) -> None:
+        event_queue.put_nowait({"event": event_type, "data": data})
+
+    async def event_generator():
+        pipeline_task = asyncio.create_task(
+            run_pipeline(
+                prompt=body.prompt,
+                correlation_id=correlation_id,
+                on_event=on_event,
+                user_id=body.user_id,
+            )
+        )
+
+        try:
+            while not pipeline_task.done():
+                try:
+                    event = await asyncio.wait_for(event_queue.get(), timeout=1.0)
+                    if event is not None:
+                        yield f"event: {event['event']}\ndata: {json.dumps(event['data'])}\n\n"
+                except asyncio.TimeoutError:
+                    yield ": keepalive\n\n"
+
+            # Drain remaining events
+            while not event_queue.empty():
+                event = event_queue.get_nowait()
+                if event is not None:
+                    yield f"event: {event['event']}\ndata: {json.dumps(event['data'])}\n\n"
+
+            digest = pipeline_task.result()
+            yield f"event: complete\ndata: {json.dumps(digest.model_dump(mode='json'))}\n\n"
+
+        except Exception as exc:
+            logger.error("Streaming pipeline error: %s", exc)
+            error_data = {"code": "PIPELINE_ERROR", "message": str(exc)}
+            yield f"event: error\ndata: {json.dumps(error_data)}\n\n"
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            settings.correlation_id_header: correlation_id,
+        },
+    )

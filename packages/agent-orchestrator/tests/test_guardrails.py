@@ -100,7 +100,7 @@ class TestValidateAndSanitize:
         digest = make_digest(
             signals=[
                 KeySignal(
-                    signal="Walmart Connect expanded self-serve.",
+                    signal="OpenAI expanded self-serve.",
                     source_url=KNOWN_URL,
                     source_title="Test Article",
                     published_date="2026-03-01",
