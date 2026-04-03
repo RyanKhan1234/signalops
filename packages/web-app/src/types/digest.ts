@@ -18,12 +18,15 @@ export type ConfidenceLevel = 'high' | 'medium' | 'low';
 /** Priority level for action items */
 export type PriorityLevel = 'P0' | 'P1' | 'P2';
 
+/** Credibility level for risk sources */
+export type CredibilityLevel = 'high' | 'medium' | 'low';
+
 /** Digest type classification */
 export type DigestType =
-  | 'daily_digest'
-  | 'weekly_report'
-  | 'risk_alert'
-  | 'competitor_monitor';
+  | 'latest_news'
+  | 'deep_dive'
+  | 'risk_scan'
+  | 'trend_watch';
 
 /**
  * A single key signal extracted from source articles.
@@ -51,6 +54,8 @@ export interface Risk {
   description: string;
   /** Severity of the risk */
   severity: SeverityLevel;
+  /** How credible the sources backing this risk are */
+  source_credibility?: CredibilityLevel;
   /** URLs of articles supporting this risk identification */
   source_urls: string[];
 }
@@ -69,7 +74,7 @@ export interface Opportunity {
 }
 
 /**
- * A prioritized action item for the ops team.
+ * A prioritized action item or follow-up.
  * Action items are derived from risks and opportunities.
  */
 export interface ActionItem {
@@ -147,7 +152,7 @@ export interface DigestResponse {
  * Request payload for POST /digest.
  */
 export interface DigestRequest {
-  /** Natural language prompt from the ops team member */
+  /** Natural language research prompt */
   prompt: string;
 }
 

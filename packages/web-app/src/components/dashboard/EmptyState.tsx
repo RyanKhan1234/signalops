@@ -38,7 +38,7 @@ export function EmptyState({ onSubmit, isLoading }: EmptyStateProps) {
 
           <div>
             <h1 className="text-2xl font-bold text-gray-900">
-              Competitive Intelligence
+              Personal Research Tool
             </h1>
             <p className="mt-2 text-base text-gray-500 max-w-md">
               Enter a prompt below to generate a structured digest of market signals,

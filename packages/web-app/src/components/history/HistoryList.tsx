@@ -21,24 +21,24 @@ import { formatDate } from '../../utils/formatDate';
 
 const DIGEST_TYPE_OPTIONS: { value: string; label: string }[] = [
   { value: '', label: 'All' },
-  { value: 'daily_digest', label: 'Daily Digest' },
-  { value: 'weekly_report', label: 'Weekly Report' },
-  { value: 'risk_alert', label: 'Risk Alert' },
-  { value: 'competitor_monitor', label: 'Competitor Monitor' },
+  { value: 'latest_news', label: 'Latest News' },
+  { value: 'deep_dive', label: 'Deep Dive' },
+  { value: 'risk_scan', label: 'Risk Scan' },
+  { value: 'trend_watch', label: 'Trend Watch' },
 ];
 
 const DIGEST_TYPE_LABELS: Record<DigestType, string> = {
-  daily_digest: 'Daily',
-  weekly_report: 'Weekly',
-  risk_alert: 'Risk Alert',
-  competitor_monitor: 'Competitor',
+  latest_news: 'Latest',
+  deep_dive: 'Deep Dive',
+  risk_scan: 'Risk Scan',
+  trend_watch: 'Trend Watch',
 };
 
 const DIGEST_TYPE_BADGE_CLASSES: Record<DigestType, string> = {
-  daily_digest: 'bg-blue-100 text-blue-800 ring-1 ring-blue-200',
-  weekly_report: 'bg-purple-100 text-purple-800 ring-1 ring-purple-200',
-  risk_alert: 'bg-red-100 text-red-800 ring-1 ring-red-200',
-  competitor_monitor: 'bg-green-100 text-green-800 ring-1 ring-green-200',
+  latest_news: 'bg-blue-100 text-blue-800 ring-1 ring-blue-200',
+  deep_dive: 'bg-purple-100 text-purple-800 ring-1 ring-purple-200',
+  risk_scan: 'bg-red-100 text-red-800 ring-1 ring-red-200',
+  trend_watch: 'bg-green-100 text-green-800 ring-1 ring-green-200',
 };
 
 // ---------------------------------------------------------------------------

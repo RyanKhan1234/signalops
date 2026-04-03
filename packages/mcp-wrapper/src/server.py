@@ -80,7 +80,7 @@ async def list_tools() -> list[Tool]:
                         "type": "string",
                         "description": (
                             "The search query (max 200 chars). "
-                            "E.g. 'Walmart Connect retail media'."
+                            "E.g. 'AI model releases this week'."
                         ),
                     },
                     "time_range": {
@@ -114,7 +114,7 @@ async def list_tools() -> list[Tool]:
                         "type": "string",
                         "description": (
                             "Company name to search for (max 200 chars). "
-                            "E.g. 'Walmart Connect'."
+                            "E.g. 'Anthropic'."
                         ),
                     },
                     "time_range": {
@@ -128,7 +128,7 @@ async def list_tools() -> list[Tool]:
                         "items": {"type": "string", "maxLength": 100},
                         "description": (
                             "Optional list of topic keywords to narrow the search. "
-                            "E.g. ['ad platform', 'partnerships']."
+                            "E.g. ['safety', 'regulation']."
                         ),
                     },
                 },

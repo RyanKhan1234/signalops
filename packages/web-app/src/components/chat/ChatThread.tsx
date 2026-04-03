@@ -63,7 +63,7 @@ export function ChatThread({ messages, isLoading }: ChatThreadProps) {
               </div>
             </div>
             <p className="text-sm text-gray-500">
-              Ask about a competitor, market trend, or request a digest...
+              What are you researching today?
             </p>
           </div>
         </div>

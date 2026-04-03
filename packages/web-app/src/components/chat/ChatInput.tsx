@@ -15,11 +15,11 @@ import type { KeyboardEvent, ChangeEvent, FormEvent } from 'react';
 const MAX_CHARS = 500;
 
 const PROMPT_SUGGESTIONS = [
-  'Daily digest for Walmart Connect',
-  'Risk alert: Amazon Advertising new features',
-  "What's new with Criteo this week?",
-  'Weekly report on retail media competition',
-  'Competitor monitor: emerging DSP players',
+  "What's new in AI model releases this week?",
+  'Deep dive on sports betting regulation',
+  'Latest news on OpenAI',
+  'Any risks or controversies around Anthropic?',
+  "What's trending in AI agents right now?",
 ] as const;
 
 interface ChatInputProps {
@@ -37,7 +37,7 @@ interface ChatInputProps {
 export function ChatInput({
   onSubmit,
   isLoading,
-  placeholder = 'Ask about a competitor, market trend, or request a digest...',
+  placeholder = 'What are you researching today?',
 }: ChatInputProps) {
   const [value, setValue] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);

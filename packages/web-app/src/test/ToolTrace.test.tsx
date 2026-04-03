@@ -10,14 +10,14 @@ import type { ToolTraceEntry } from '../types/digest';
 const SAMPLE_ENTRIES: ToolTraceEntry[] = [
   {
     tool_name: 'search_company_news',
-    input: { company: 'Walmart Connect', time_range: '7d' },
-    output_summary: 'Returned 12 articles about Walmart Connect.',
+    input: { company: 'OpenAI', time_range: '7d' },
+    output_summary: 'Returned 12 articles about OpenAI.',
     latency_ms: 1243,
     timestamp: '2026-03-01T11:59:45Z',
   },
   {
     tool_name: 'search_news',
-    input: { query: 'Walmart Connect retail media', time_range: '7d' },
+    input: { query: 'OpenAI AI research', time_range: '7d' },
     output_summary: 'Returned 10 articles.',
     latency_ms: 987,
     timestamp: '2026-03-01T11:59:47Z',
@@ -63,7 +63,7 @@ describe('ToolTrace', () => {
     expect(firstButton).toHaveAttribute('aria-expanded', 'true');
 
     // Should show the output summary text
-    expect(screen.getByText('Returned 12 articles about Walmart Connect.')).toBeInTheDocument();
+    expect(screen.getByText('Returned 12 articles about OpenAI.')).toBeInTheDocument();
   });
 
   it('renders empty state when toolTrace is empty', () => {

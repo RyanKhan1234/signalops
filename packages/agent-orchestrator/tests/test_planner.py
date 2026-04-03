@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from src.agent.planner import plan_tool_calls, _count_groups
+from src.agent.planner import plan_tool_calls, _count_groups, _is_named_entity
 from src.models.digest import DetectedIntent, PlannedToolCall
 
 
@@ -22,33 +22,68 @@ def make_intent(
     )
 
 
+class TestIsNamedEntity:
+    """Tests for the _is_named_entity heuristic."""
+
+    def test_short_company_name_is_named_entity(self) -> None:
+        assert _is_named_entity("OpenAI") is True
+
+    def test_two_word_company_is_named_entity(self) -> None:
+        assert _is_named_entity("Anthropic") is True
+
+    def test_topic_phrase_is_not_named_entity(self) -> None:
+        assert _is_named_entity("AI model releases") is False
+
+    def test_topic_with_regulation_is_not_named_entity(self) -> None:
+        assert _is_named_entity("sports betting regulation") is False
+
+    def test_long_phrase_is_not_named_entity(self) -> None:
+        assert _is_named_entity("large language model developments") is False
+
+    def test_two_word_brand_is_named_entity(self) -> None:
+        assert _is_named_entity("Google DeepMind") is True
+
+
 class TestPlanToolCalls:
     """Tests for plan_tool_calls function."""
 
-    def test_latest_news_produces_search_news_calls(self) -> None:
-        intent = make_intent(intent_type="latest_news", time_range="1d")
+    def test_latest_news_named_entity_uses_company_news(self) -> None:
+        intent = make_intent(intent_type="latest_news", entities=["OpenAI"], time_range="1d")
+        plan = plan_tool_calls(intent)
+        assert any(c.tool_name == "search_company_news" for c in plan.calls)
+
+    def test_latest_news_topic_phrase_uses_search_news(self) -> None:
+        intent = make_intent(intent_type="latest_news", entities=["AI model releases"], time_range="1d")
         plan = plan_tool_calls(intent)
         assert all(c.tool_name == "search_news" for c in plan.calls)
 
     def test_latest_news_one_call_per_entity(self) -> None:
         intent = make_intent(
             intent_type="latest_news",
-            entities=["AI models", "LLMs"],
+            entities=["AI model releases", "LLM trends"],
             time_range="1d",
         )
         plan = plan_tool_calls(intent)
         assert len(plan.calls) == 2
 
-    def test_latest_news_query_includes_entity(self) -> None:
+    def test_latest_news_named_entity_uses_company_param(self) -> None:
         intent = make_intent(intent_type="latest_news", entities=["OpenAI"], time_range="1d")
         plan = plan_tool_calls(intent)
-        assert any("OpenAI" in str(c.arguments.get("query", "")) for c in plan.calls)
+        company_calls = [c for c in plan.calls if c.tool_name == "search_company_news"]
+        assert company_calls[0].arguments["company"] == "OpenAI"
 
-    def test_deep_dive_produces_multiple_search_news_calls(self) -> None:
-        intent = make_intent(intent_type="deep_dive", time_range="7d")
+    def test_deep_dive_named_entity_mixes_tool_types(self) -> None:
+        intent = make_intent(intent_type="deep_dive", entities=["Anthropic"], time_range="7d")
+        plan = plan_tool_calls(intent)
+        tool_names = {c.tool_name for c in plan.calls}
+        assert "search_company_news" in tool_names
+        assert "search_news" in tool_names
+
+    def test_deep_dive_topic_uses_only_search_news(self) -> None:
+        intent = make_intent(intent_type="deep_dive", entities=["AI model releases"], time_range="7d")
         plan = plan_tool_calls(intent)
         assert all(c.tool_name == "search_news" for c in plan.calls)
-        assert len(plan.calls) >= 2  # per-entity + broader context call
+        assert len(plan.calls) >= 2
 
     def test_deep_dive_broader_search_uses_7d_range(self) -> None:
         intent = make_intent(intent_type="deep_dive", time_range="7d")

@@ -45,14 +45,14 @@ def _build_company_query(company: str, topics: list[str] | None) -> str:
     Parameters
     ----------
     company:
-        The company name (e.g. ``"Walmart Connect"``).
+        The company name (e.g. ``"Anthropic"``).
     topics:
         Optional list of topic keywords to narrow the search.
 
     Returns
     -------
     str
-        A query string such as ``"Walmart Connect ad platform partnerships"``.
+        A query string such as ``"Anthropic safety regulation"``.
     """
     if topics:
         topic_str = " ".join(topics)
@@ -74,13 +74,13 @@ async def execute_search_company_news(
     Parameters
     ----------
     company:
-        Company name to search news for (e.g. ``"Walmart Connect"``).
+        Company name to search news for (e.g. ``"Anthropic"``).
     time_range:
         Time range for the search (``"1d"``, ``"7d"``, ``"30d"``, ``"1y"``).
         Defaults to ``"7d"``.
     topics:
         Optional list of topic keywords to narrow the search
-        (e.g. ``["ad platform", "partnerships"]``).
+        (e.g. ``["safety", "regulation"]``).
     client:
         Injected ``SerpApiClient`` instance.
     cache:

@@ -6,17 +6,17 @@ import type { DigestResponse } from '../../types/digest';
 import { SectionHeader } from '../common/SectionHeader';
 
 const DIGEST_TYPE_LABELS: Record<DigestResponse['digest_type'], string> = {
-  daily_digest: 'Daily Digest',
-  weekly_report: 'Weekly Report',
-  risk_alert: 'Risk Alert',
-  competitor_monitor: 'Competitor Monitor',
+  latest_news: 'Latest News',
+  deep_dive: 'Deep Dive',
+  risk_scan: 'Risk Scan',
+  trend_watch: 'Trend Watch',
 };
 
 const DIGEST_TYPE_COLORS: Record<DigestResponse['digest_type'], string> = {
-  daily_digest: 'bg-blue-50 border-blue-200 text-blue-800',
-  weekly_report: 'bg-purple-50 border-purple-200 text-purple-800',
-  risk_alert: 'bg-red-50 border-red-200 text-red-800',
-  competitor_monitor: 'bg-amber-50 border-amber-200 text-amber-800',
+  latest_news: 'bg-blue-50 border-blue-200 text-blue-800',
+  deep_dive: 'bg-purple-50 border-purple-200 text-purple-800',
+  risk_scan: 'bg-red-50 border-red-200 text-red-800',
+  trend_watch: 'bg-amber-50 border-amber-200 text-amber-800',
 };
 
 interface ExecutiveSummaryProps {

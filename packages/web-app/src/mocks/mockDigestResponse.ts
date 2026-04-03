@@ -2,62 +2,56 @@
  * Mock digest response for development and testing.
  *
  * This mock is only used when VITE_USE_MOCK_API=true.
- * It mirrors the example flow from PRD section 4 (Walmart Connect weekly report).
  * Never import this in production code -- use the real API service.
  */
 
 import type { DigestResponse } from '../types/digest';
 
 export const MOCK_DIGEST_RESPONSE: DigestResponse = {
-  digest_type: 'weekly_report',
-  query: 'Anything important about Walmart Connect this week?',
+  digest_type: 'deep_dive',
+  query: "What's new in AI model releases this week?",
   generated_at: '2026-03-01T12:00:00Z',
   report_id: 'rpt_mock_abc123',
   executive_summary:
-    "Walmart Connect had a significant week, announcing expanded self-serve ad capabilities and a new API integration program targeting mid-market retail brands. These moves signal a strategic push to deepen its retail media ecosystem and compete more directly with Amazon Advertising and Criteo in the self-serve segment. Revenue from Walmart Connect grew an estimated 28% YoY according to analyst commentary.",
+    "This week saw a wave of significant AI model releases: Google launched Gemini 2.0 Flash with substantially improved reasoning and multimodal capabilities, while Meta released Llama 3.2 with vision support for the first time. OpenAI quietly updated GPT-4o with improved instruction-following, and Mistral released Mistral Small 3 as a highly capable open-weight model targeting local deployment use cases.",
   key_signals: [
     {
       signal:
-        'Walmart Connect launches expanded self-serve ad platform with new targeting capabilities for mid-market brands.',
-      source_url:
-        'https://www.retaildive.com/news/walmart-connect-self-serve-ad-platform-2026/example/',
-      source_title: 'Walmart Connect Expands Self-Serve Ad Platform',
+        'Google released Gemini 2.0 Flash, offering significantly faster inference and improved reasoning benchmarks at a lower cost tier than Gemini 1.5 Pro.',
+      source_url: 'https://blog.google/technology/google-deepmind/gemini-2-flash/example/',
+      source_title: 'Google launches Gemini 2.0 Flash',
       published_date: '2026-02-28T09:00:00Z',
       relevance: 'high',
     },
     {
       signal:
-        'Walmart Connect announces API integration program enabling third-party DSPs to access Walmart first-party shopper data.',
-      source_url:
-        'https://www.adexchanger.com/retail-media/walmart-connect-api-2026/example/',
-      source_title: 'Walmart Connect Opens API to Third-Party DSPs',
+        'Meta released Llama 3.2 with native vision capabilities, marking the first time the Llama family supports image understanding — available as open weights.',
+      source_url: 'https://ai.meta.com/blog/llama-3-2-vision/example/',
+      source_title: 'Meta Llama 3.2 brings vision to open-source AI',
       published_date: '2026-02-27T14:30:00Z',
       relevance: 'high',
     },
     {
       signal:
-        'Analyst report estimates Walmart Connect revenue grew 28% YoY in Q4 2025, outpacing broader retail media market growth.',
-      source_url:
-        'https://www.emarketer.com/content/walmart-connect-q4-2025/example/',
-      source_title: 'Walmart Connect Q4 2025 Revenue Analysis',
+        'Mistral AI released Mistral Small 3, a compact open-weight model claiming state-of-the-art performance in its size class, optimized for local and edge deployment.',
+      source_url: 'https://mistral.ai/news/mistral-small-3/example/',
+      source_title: 'Mistral Small 3: powerful and local',
       published_date: '2026-02-26T11:00:00Z',
       relevance: 'high',
     },
     {
       signal:
-        'Walmart Connect adds new video ad formats to its in-store screen network, increasing premium inventory supply.',
-      source_url:
-        'https://www.marketingweek.com/walmart-connect-video-ads/example/',
-      source_title: 'Walmart Connect Adds Video to In-Store Screens',
+        'OpenAI updated GPT-4o with improved instruction-following and longer context retention, with users reporting noticeably better performance on complex multi-step tasks.',
+      source_url: 'https://techcrunch.com/2026/02/gpt4o-update/example/',
+      source_title: 'OpenAI quietly improves GPT-4o',
       published_date: '2026-02-25T16:00:00Z',
       relevance: 'medium',
     },
     {
       signal:
-        'Walmart Connect hires former Amazon Advertising VP as new Head of Advertiser Solutions.',
-      source_url:
-        'https://www.linkedin.com/news/walmart-connect-hire/example/',
-      source_title: 'Walmart Connect Poaches Amazon Advertising Exec',
+        'Anthropic published a detailed model card for Claude 3.5 Sonnet including new safety evaluations, noting improved performance on coding and agentic tasks.',
+      source_url: 'https://www.anthropic.com/model-card/claude-3-5-sonnet/example/',
+      source_title: 'Anthropic Claude 3.5 Sonnet model card',
       published_date: '2026-02-24T08:00:00Z',
       relevance: 'medium',
     },
@@ -65,143 +59,120 @@ export const MOCK_DIGEST_RESPONSE: DigestResponse = {
   risks: [
     {
       description:
-        "Walmart Connect self-serve platform expansion may pressure competitor ad margins as brands reallocate budgets from smaller retail media networks to Walmart's scale.",
-      severity: 'high',
-      source_urls: [
-        'https://www.retaildive.com/news/walmart-connect-self-serve-ad-platform-2026/example/',
-        'https://www.emarketer.com/content/walmart-connect-q4-2025/example/',
-      ],
-    },
-    {
-      description:
-        "New API integrations could accelerate DSP consolidation around Walmart's first-party data, reducing leverage for independent retail media platforms.",
-      severity: 'high',
-      source_urls: [
-        'https://www.adexchanger.com/retail-media/walmart-connect-api-2026/example/',
-      ],
-    },
-    {
-      description:
-        'Recruitment of Amazon Advertising talent signals intensified competition for ad tech expertise and potential acceleration in platform capabilities.',
+        'The rapid pace of model releases from multiple labs makes it difficult to track which model is best for a given task — benchmarks are increasingly unreliable as labs optimize specifically for them.',
       severity: 'medium',
+      source_credibility: 'high',
       source_urls: [
-        'https://www.linkedin.com/news/walmart-connect-hire/example/',
+        'https://techcrunch.com/2026/02/gpt4o-update/example/',
+        'https://mistral.ai/news/mistral-small-3/example/',
+      ],
+    },
+    {
+      description:
+        "Open-weight models like Llama 3.2 and Mistral Small 3 closing the gap with proprietary models could commoditize AI APIs, putting pricing pressure on OpenAI and Anthropic's core business.",
+      severity: 'low',
+      source_credibility: 'medium',
+      source_urls: [
+        'https://ai.meta.com/blog/llama-3-2-vision/example/',
       ],
     },
   ],
   opportunities: [
     {
       description:
-        'New API integration program presents a potential partnership opening to position as a preferred third-party measurement or attribution partner for Walmart Connect campaigns.',
+        'Llama 3.2 vision support opens up multimodal local applications that previously required expensive proprietary APIs — worth experimenting with for image-heavy research workflows.',
       confidence: 'high',
       source_urls: [
-        'https://www.adexchanger.com/retail-media/walmart-connect-api-2026/example/',
+        'https://ai.meta.com/blog/llama-3-2-vision/example/',
       ],
     },
     {
       description:
-        "Walmart Connect's expansion into mid-market self-serve creates an opening to position complementary planning and optimization tools for brands new to Walmart's ecosystem.",
+        'Gemini 2.0 Flash cost tier makes high-volume research automation significantly cheaper — could be worth benchmarking against current Claude usage for digest generation.',
       confidence: 'medium',
       source_urls: [
-        'https://www.retaildive.com/news/walmart-connect-self-serve-ad-platform-2026/example/',
+        'https://blog.google/technology/google-deepmind/gemini-2-flash/example/',
       ],
     },
   ],
   action_items: [
     {
-      action:
-        'Evaluate Walmart Connect API integration program and submit a partnership application as a third-party measurement partner within the next 2 weeks.',
-      priority: 'P0',
-      rationale:
-        'Early mover advantage in the API program could secure preferred partner status before competitors. The integration opens direct access to Walmart first-party shopper data for campaign measurement.',
-    },
-    {
-      action:
-        'Conduct competitive impact analysis: model how Walmart Connect self-serve budget reallocation from mid-market brands affects our current pipeline in the retail media segment.',
+      action: 'Benchmark Gemini 2.0 Flash against Claude on a sample of digest queries to compare quality and cost.',
       priority: 'P1',
-      rationale:
-        'Self-serve platform lowers the barrier to entry for Walmart advertising. If mid-market brands in our pipeline shift spend to Walmart Connect, we need to understand the revenue risk before Q2 planning.',
+      rationale: 'Lower cost per call could meaningfully reduce API spend if quality holds up for this use case.',
     },
     {
-      action:
-        'Brief the sales team on Walmart Connect platform expansions with updated competitive positioning deck for RevOps conversations with enterprise prospects.',
+      action: 'Download and test Mistral Small 3 locally for any offline or latency-sensitive research tasks.',
       priority: 'P2',
-      rationale:
-        'Sales teams need current competitive context to handle objections from prospects evaluating Walmart Connect alternatives.',
+      rationale: 'Open-weight local models are now competitive enough to be worth evaluating for personal use without API costs.',
+    },
+    {
+      action: 'Read the Anthropic Claude 3.5 Sonnet model card safety section — relevant given recent agentic use.',
+      priority: 'P2',
+      rationale: 'Understanding the safety profile of models you use in agentic pipelines is worth tracking as capabilities expand.',
     },
   ],
   sources: [
     {
-      url: 'https://www.retaildive.com/news/walmart-connect-self-serve-ad-platform-2026/example/',
-      title: 'Walmart Connect Expands Self-Serve Ad Platform',
+      url: 'https://blog.google/technology/google-deepmind/gemini-2-flash/example/',
+      title: 'Google launches Gemini 2.0 Flash',
       published_date: '2026-02-28T09:00:00Z',
       snippet:
-        'Walmart Connect announced a significant expansion of its self-serve advertising platform on Thursday, adding new audience targeting capabilities specifically designed for mid-market brands spending $50K-$500K annually on retail media.',
+        'Google DeepMind announced Gemini 2.0 Flash, a new model in the Gemini 2.0 family offering faster inference and stronger reasoning at a lower price point than Gemini 1.5 Pro.',
     },
     {
-      url: 'https://www.adexchanger.com/retail-media/walmart-connect-api-2026/example/',
-      title: 'Walmart Connect Opens API to Third-Party DSPs',
+      url: 'https://ai.meta.com/blog/llama-3-2-vision/example/',
+      title: 'Meta Llama 3.2 brings vision to open-source AI',
       published_date: '2026-02-27T14:30:00Z',
       snippet:
-        "Walmart Connect is opening its retail media platform to third-party demand-side platforms through a new API integration program, giving advertisers more flexibility in how they access and activate Walmart's first-party shopper data.",
+        'Meta released Llama 3.2, the first version of the Llama model family to include native vision capabilities, available as open weights for research and commercial use.',
     },
     {
-      url: 'https://www.emarketer.com/content/walmart-connect-q4-2025/example/',
-      title: 'Walmart Connect Q4 2025 Revenue Analysis',
+      url: 'https://mistral.ai/news/mistral-small-3/example/',
+      title: 'Mistral Small 3: powerful and local',
       published_date: '2026-02-26T11:00:00Z',
       snippet:
-        "Walmart Connect's advertising revenue grew an estimated 28% year-over-year in Q4 2025, analysts say, outpacing the broader retail media market's 19% growth rate and narrowing the gap with Amazon Advertising.",
+        'Mistral AI released Mistral Small 3, a compact open-weight model optimized for local deployment, claiming top performance in its size class on standard reasoning and coding benchmarks.',
     },
     {
-      url: 'https://www.marketingweek.com/walmart-connect-video-ads/example/',
-      title: 'Walmart Connect Adds Video to In-Store Screens',
+      url: 'https://techcrunch.com/2026/02/gpt4o-update/example/',
+      title: 'OpenAI quietly improves GPT-4o',
       published_date: '2026-02-25T16:00:00Z',
       snippet:
-        'Walmart Connect is rolling out video ad formats across its network of 170,000 in-store digital screens, adding premium video inventory to a retail media portfolio that previously focused primarily on static display ads.',
+        'OpenAI pushed a silent update to GPT-4o improving instruction-following and context retention. Users on developer forums noted the changes before any official announcement.',
     },
     {
-      url: 'https://www.linkedin.com/news/walmart-connect-hire/example/',
-      title: 'Walmart Connect Poaches Amazon Advertising Exec',
+      url: 'https://www.anthropic.com/model-card/claude-3-5-sonnet/example/',
+      title: 'Anthropic Claude 3.5 Sonnet model card',
       published_date: '2026-02-24T08:00:00Z',
       snippet:
-        "Walmart Connect has hired a former Amazon Advertising VP as its new Head of Advertiser Solutions, signaling the company's intent to accelerate its retail media platform capabilities with talent from the market leader.",
+        'Anthropic published an updated model card for Claude 3.5 Sonnet covering safety evaluations, capability benchmarks, and guidance for agentic use cases.',
     },
   ],
   tool_trace: [
     {
-      tool_name: 'search_company_news',
+      tool_name: 'search_news',
       input: {
-        company: 'Walmart Connect',
+        query: 'AI model releases this week',
         time_range: '7d',
+        num_results: 10,
       },
       output_summary:
-        'Returned 12 articles about Walmart Connect from the past 7 days. Top topics: self-serve platform expansion (4 articles), API integration program (3 articles), Q4 2025 earnings commentary (2 articles), executive hiring (2 articles), in-store video ads (1 article).',
-      latency_ms: 1243,
+        'Returned 10 articles covering recent AI model releases. Top topics: Gemini 2.0 Flash (3 articles), Llama 3.2 vision (3 articles), Mistral Small 3 (2 articles), GPT-4o update (2 articles).',
+      latency_ms: 1121,
       timestamp: '2026-03-01T11:59:45Z',
     },
     {
       tool_name: 'search_news',
       input: {
-        query: 'Walmart Connect retail media',
+        query: '"AI models" OR "LLMs" OR "foundation models" analysis update development',
         time_range: '7d',
         num_results: 10,
       },
       output_summary:
-        'Returned 10 articles covering Walmart Connect in the retail media context. 6 articles overlapped with company_news results; 4 new articles added including analyst revenue estimate and competitive positioning piece.',
-      latency_ms: 987,
+        'Returned 10 articles on broader AI model landscape. 5 overlapped with first search; 5 new articles added including Anthropic model card and benchmark analysis pieces.',
+      latency_ms: 934,
       timestamp: '2026-03-01T11:59:47Z',
-    },
-    {
-      tool_name: 'search_news',
-      input: {
-        query: 'retail media network competition Amazon Criteo 2026',
-        time_range: '7d',
-        num_results: 10,
-      },
-      output_summary:
-        'Returned 10 articles on retail media competitive landscape. Used for context on competitive positioning and risk assessment. No additional Walmart Connect signals found beyond what was already captured.',
-      latency_ms: 1102,
-      timestamp: '2026-03-01T11:59:49Z',
     },
   ],
 };

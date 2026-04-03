@@ -15,7 +15,7 @@ describe('ChatInput', () => {
   it('renders the textarea with correct placeholder', () => {
     render(<ChatInput {...defaultProps} />);
     expect(
-      screen.getByPlaceholderText(/Ask about a competitor/i)
+      screen.getByPlaceholderText(/What are you researching today/i)
     ).toBeInTheDocument();
   });
 
@@ -28,7 +28,7 @@ describe('ChatInput', () => {
   it('enables the submit button when text is entered', async () => {
     render(<ChatInput {...defaultProps} />);
     const textarea = screen.getByRole('textbox', { name: /digest prompt/i });
-    await userEvent.type(textarea, 'Walmart Connect digest');
+    await userEvent.type(textarea, 'OpenAI digest');
     const button = screen.getByRole('button', { name: /submit digest request/i });
     expect(button).toBeEnabled();
   });
@@ -37,10 +37,10 @@ describe('ChatInput', () => {
     const onSubmit = vi.fn();
     render(<ChatInput {...defaultProps} onSubmit={onSubmit} />);
     const textarea = screen.getByRole('textbox', { name: /digest prompt/i });
-    await userEvent.type(textarea, '  Walmart Connect  ');
+    await userEvent.type(textarea, '  OpenAI  ');
     const button = screen.getByRole('button', { name: /submit digest request/i });
     await userEvent.click(button);
-    expect(onSubmit).toHaveBeenCalledWith('Walmart Connect');
+    expect(onSubmit).toHaveBeenCalledWith('OpenAI');
   });
 
   it('clears the input after successful submission', async () => {
@@ -70,7 +70,7 @@ describe('ChatInput', () => {
     });
     await userEvent.click(suggestionButton);
     const textarea = screen.getByRole('textbox', { name: /digest prompt/i });
-    expect(textarea).toHaveValue('Daily digest for Walmart Connect');
+    expect(textarea).toHaveValue('Daily digest for OpenAI');
   });
 
   it('calls onSubmit on Ctrl+Enter keyboard shortcut', async () => {

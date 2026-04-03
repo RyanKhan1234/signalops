@@ -125,7 +125,7 @@ function App() {
             </div>
             <span className="font-semibold text-gray-900">SignalOps</span>
             <span className="text-xs text-gray-500 hidden sm:block">
-              Competitive Intelligence
+              Personal Research Tool
             </span>
           </div>
         </div>

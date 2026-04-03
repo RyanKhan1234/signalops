@@ -1,5 +1,5 @@
 /**
- * ActionItems — renders prioritized action items for the ops team.
+ * ActionItems — renders prioritized follow-up actions from a digest.
  * Items are displayed as an ordered list with P0/P1/P2 priority badges.
  */
 
@@ -36,7 +36,7 @@ export function ActionItems({ actionItems }: ActionItemsProps) {
       <SectionHeader
         title="Action Items"
         count={actionItems.length}
-        description="Prioritized next steps for the ops team based on this week's intelligence"
+        description="Prioritized next steps and follow-ups based on what was found"
       />
       <ol className="flex flex-col gap-3" aria-label="Action items list">
         {sorted.map((item, index) => (

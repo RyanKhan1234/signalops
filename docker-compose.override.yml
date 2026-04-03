@@ -42,7 +42,7 @@ services:
       LOG_LEVEL: DEBUG
       # Reduce LangChain verbosity — set to 1 for full chain tracing
       LANGCHAIN_VERBOSE: ${LANGCHAIN_VERBOSE:-0}
-      LANGCHAIN_TRACING_V2: ${LANGCHAIN_TRACING_V2:-false}
+      LANGCHAIN_TRACING_V2: ${LANGSMITH_TRACING:-false}
 
   web-app:
     environment:
