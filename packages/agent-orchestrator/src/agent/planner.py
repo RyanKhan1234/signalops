@@ -24,6 +24,7 @@ _TOPIC_WORDS = frozenset({
     "technology", "news", "latest", "update", "updates", "industry",
     "development", "developments", "policy", "law", "betting", "crypto",
     "research", "science", "health", "climate", "election", "elections",
+    "model", "models", "agent", "agents", "system", "systems",
 })
 
 
