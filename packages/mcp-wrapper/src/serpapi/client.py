@@ -179,6 +179,156 @@ class SerpApiClient:
 
         return SerpApiResponse.model_validate(raw)
 
+    async def search_web(
+        self,
+        query: str,
+        num_results: int = 10,
+        gl: str = _DEFAULT_GEOLOCATION,
+    ) -> SerpApiResponse:
+        """Execute a Google web search via SerpApi.
+
+        Parameters
+        ----------
+        query:
+            The search query string.
+        num_results:
+            Number of results to request (1–50).
+        gl:
+            Geolocation code (default ``"us"``).
+
+        Returns
+        -------
+        SerpApiResponse
+            Parsed (but *not* normalised) SerpApi response.
+        """
+        params: dict[str, Any] = {
+            "engine": "google",
+            "q": query,
+            "num": str(num_results),
+            "gl": gl,
+            "api_key": self._api_key,
+        }
+
+        logger.debug("SerpApi request: engine=google q=%r num=%d", query, num_results)
+
+        client = self._get_client()
+        response = await client.get(self._base_url, params=params)
+        response.raise_for_status()
+
+        raw: dict[str, Any] = response.json()
+        result_count = len(raw.get("organic_results") or [])
+        logger.debug("SerpApi response: %d organic_results returned", result_count)
+
+        return SerpApiResponse.model_validate(raw)
+
+    async def search_scholar(
+        self,
+        query: str,
+        num_results: int = 10,
+    ) -> SerpApiResponse:
+        """Execute a Google Scholar search via SerpApi.
+
+        Parameters
+        ----------
+        query:
+            The search query string.
+        num_results:
+            Number of results to request (1–50).
+
+        Returns
+        -------
+        SerpApiResponse
+            Parsed (but *not* normalised) SerpApi response.
+        """
+        params: dict[str, Any] = {
+            "engine": "google_scholar",
+            "q": query,
+            "num": str(num_results),
+            "api_key": self._api_key,
+        }
+
+        logger.debug(
+            "SerpApi request: engine=google_scholar q=%r num=%d", query, num_results
+        )
+
+        client = self._get_client()
+        response = await client.get(self._base_url, params=params)
+        response.raise_for_status()
+
+        raw: dict[str, Any] = response.json()
+        result_count = len(raw.get("organic_results") or [])
+        logger.debug("SerpApi response: %d organic_results returned", result_count)
+
+        return SerpApiResponse.model_validate(raw)
+
+    async def search_finance(self, query: str) -> SerpApiResponse:
+        """Execute a Google Finance search via SerpApi.
+
+        Parameters
+        ----------
+        query:
+            The financial instrument query string (e.g. ``"AAPL:NASDAQ"``).
+
+        Returns
+        -------
+        SerpApiResponse
+            Parsed (but *not* normalised) SerpApi response.
+        """
+        params: dict[str, Any] = {
+            "engine": "google_finance",
+            "q": query,
+            "api_key": self._api_key,
+        }
+
+        logger.debug("SerpApi request: engine=google_finance q=%r", query)
+
+        client = self._get_client()
+        response = await client.get(self._base_url, params=params)
+        response.raise_for_status()
+
+        raw: dict[str, Any] = response.json()
+        logger.debug("SerpApi finance response received for query: %r", query)
+
+        return SerpApiResponse.model_validate(raw)
+
+    async def search_videos(
+        self,
+        query: str,
+        num_results: int = 10,
+    ) -> SerpApiResponse:
+        """Execute a YouTube search via SerpApi.
+
+        Parameters
+        ----------
+        query:
+            The search query string.
+        num_results:
+            Approximate number of results requested (YouTube may not honour
+            this exactly).
+
+        Returns
+        -------
+        SerpApiResponse
+            Parsed (but *not* normalised) SerpApi response.
+        """
+        params: dict[str, Any] = {
+            "engine": "youtube",
+            "search_query": query,
+            "api_key": self._api_key,
+        }
+
+        logger.debug("SerpApi request: engine=youtube search_query=%r", query)
+
+        client = self._get_client()
+        response = await client.get(self._base_url, params=params)
+        response.raise_for_status()
+
+        raw: dict[str, Any] = response.json()
+        result_count = len(raw.get("video_results") or [])
+        logger.debug("SerpApi response: %d video_results returned", result_count)
+
+        return SerpApiResponse.model_validate(raw)
+
     async def get_article_metadata(self, url: str) -> SerpApiResponse:
         """Search SerpApi for metadata about a specific article URL.
 

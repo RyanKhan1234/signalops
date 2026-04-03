@@ -221,3 +221,159 @@ def normalize_response(
         cached=cached,
         request_id=rid,
     )
+
+
+def normalize_organic_results(
+    raw: SerpApiResponse,
+    query: str,
+    cached: bool = False,
+    request_id: str | None = None,
+) -> NormalizedResponse:
+    """Normalize ``organic_results`` from Google web, Scholar, or Quora searches.
+
+    Used by ``search_web``, ``search_scholar``, and ``search_quora`` tools.
+    Reads ``raw.model_extra["organic_results"]`` because ``SerpApiResponse``
+    uses ``extra="allow"`` to capture engine-specific fields.
+
+    Parameters
+    ----------
+    raw:
+        The parsed (but un-normalised) SerpApi response.
+    query:
+        The original query string — stored on the response for traceability.
+    cached:
+        Whether this response came from the cache.
+    request_id:
+        UUID string to use as the request identifier.  A new UUID is generated
+        if ``None`` is supplied.
+
+    Returns
+    -------
+    NormalizedResponse
+        The canonical SignalOps article list.
+    """
+    rid = request_id or str(uuid.uuid4())
+    articles: list[NormalizedArticle] = []
+    seen_urls: set[str] = set()
+
+    raw_results: list[dict[str, Any]] = raw.model_extra.get("organic_results") or []
+    for item in raw_results:
+        url = item.get("link") or ""
+        if not url:
+            continue
+
+        normalised_url = url.strip().rstrip("/")
+        if normalised_url in seen_urls:
+            logger.debug("Deduplicating organic result with URL: %s", normalised_url)
+            continue
+        seen_urls.add(normalised_url)
+
+        title = _strip_html(item.get("title"))
+        snippet = _strip_html(item.get("snippet"))
+        published_date = _parse_date(item.get("date"))
+        # organic_results carry source as a plain domain string (e.g. "techcrunch.com")
+        source_raw = item.get("source")
+        if isinstance(source_raw, str):
+            source = _strip_html(source_raw) or "Unknown"
+        else:
+            source = "Unknown"
+        thumbnail_url = item.get("thumbnail") or None
+
+        articles.append(
+            NormalizedArticle(
+                title=title or "Untitled",
+                url=normalised_url,
+                source=source,
+                published_date=published_date,
+                snippet=snippet,
+                thumbnail_url=thumbnail_url,
+            )
+        )
+
+    return NormalizedResponse(
+        articles=articles,
+        query=query,
+        total_results=len(articles),
+        cached=cached,
+        request_id=rid,
+    )
+
+
+def normalize_video_results(
+    raw: SerpApiResponse,
+    query: str,
+    cached: bool = False,
+    request_id: str | None = None,
+) -> NormalizedResponse:
+    """Normalize ``video_results`` from the YouTube engine.
+
+    Reads ``raw.model_extra["video_results"]`` because ``SerpApiResponse``
+    uses ``extra="allow"`` to capture engine-specific fields.
+
+    Parameters
+    ----------
+    raw:
+        The parsed (but un-normalised) SerpApi response.
+    query:
+        The original query string — stored on the response for traceability.
+    cached:
+        Whether this response came from the cache.
+    request_id:
+        UUID string to use as the request identifier.  A new UUID is generated
+        if ``None`` is supplied.
+
+    Returns
+    -------
+    NormalizedResponse
+        The canonical SignalOps article list, one entry per video.
+    """
+    rid = request_id or str(uuid.uuid4())
+    articles: list[NormalizedArticle] = []
+    seen_urls: set[str] = set()
+
+    raw_results: list[dict[str, Any]] = raw.model_extra.get("video_results") or []
+    for item in raw_results:
+        url = item.get("link") or ""
+        if not url:
+            continue
+
+        normalised_url = url.strip().rstrip("/")
+        if normalised_url in seen_urls:
+            logger.debug("Deduplicating video result with URL: %s", normalised_url)
+            continue
+        seen_urls.add(normalised_url)
+
+        title = _strip_html(item.get("title"))
+        # description field maps to snippet
+        snippet = _strip_html(item.get("description"))
+        # channel.name is the source; fall back to "YouTube"
+        channel = item.get("channel") or {}
+        source = _strip_html(channel.get("name")) if isinstance(channel, dict) else ""
+        source = source or "YouTube"
+        published_date = _parse_date(item.get("published_date"))
+        # thumbnail is nested: thumbnail.static
+        thumbnail_raw = item.get("thumbnail")
+        thumbnail_url: str | None = None
+        if isinstance(thumbnail_raw, dict):
+            thumbnail_url = thumbnail_raw.get("static") or None
+        elif isinstance(thumbnail_raw, str):
+            thumbnail_url = thumbnail_raw or None
+
+        articles.append(
+            NormalizedArticle(
+                title=title or "Untitled",
+                url=normalised_url,
+                source=source,
+                published_date=published_date,
+                snippet=snippet,
+                thumbnail_url=thumbnail_url,
+            )
+        )
+
+    return NormalizedResponse(
+        articles=articles,
+        query=query,
+        total_results=len(articles),
+        cached=cached,
+        request_id=rid,
+    )

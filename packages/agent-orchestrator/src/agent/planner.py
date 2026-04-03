@@ -16,6 +16,8 @@ logger = logging.getLogger(__name__)
 MAX_ENTITIES = 5
 # Default number of results to request per tool call
 DEFAULT_NUM_RESULTS = 10
+# Maximum total tool calls per plan (prevents runaway API usage on wide queries)
+MAX_CALLS = 15
 
 # Words that indicate an entity is a topic/phrase rather than a named entity.
 # Entities containing these words get search_news; others get search_company_news.
@@ -25,6 +27,15 @@ _TOPIC_WORDS = frozenset({
     "development", "developments", "policy", "law", "betting", "crypto",
     "research", "science", "health", "climate", "election", "elections",
     "model", "models", "agent", "agents", "system", "systems",
+})
+
+# Words that indicate an entity is a tech/AI/software topic.
+_TECH_WORDS = frozenset({
+    "ai", "ml", "llm", "llms", "gpt", "neural", "crypto", "blockchain",
+    "software", "algorithm", "code", "coding", "programming",
+    "python", "javascript", "typescript", "github", "open", "source",
+    "api", "library", "framework", "dataset", "training", "inference",
+    "gpu", "quantum", "computing", "saas", "cloud",
 })
 
 
@@ -94,14 +105,27 @@ def _is_named_entity(entity: str) -> bool:
     return not any(w in _TOPIC_WORDS for w in words)
 
 
+def _is_tech_topic(entity: str) -> bool:
+    """Return True if the entity sounds like a tech/AI/software topic.
+
+    Examples:
+      "AI agents"  → True
+      "LLM training" → True
+      "sports betting" → False
+    """
+    words = entity.lower().split()
+    return any(w in _TECH_WORDS for w in words)
+
+
 # ---------------------------------------------------------------------------
 # Intent-specific planners
 # ---------------------------------------------------------------------------
 
 
 def _plan_latest_news(entities: list[str], time_range: str) -> list[PlannedToolCall]:
-    """Plan: one call per entity — search_company_news for named entities, search_news for topics.
+    """Plan: one primary call per entity plus one supplemental reddit call per entity.
 
+    Named entities get search_company_news; topic phrases get search_news.
     All calls run in parallel (group 0).
     """
     calls: list[PlannedToolCall] = []
@@ -130,16 +154,29 @@ def _plan_latest_news(entities: list[str], time_range: str) -> list[PlannedToolC
                     parallel_group=0,
                 )
             )
+        # Supplemental community signal via Reddit
+        calls.append(
+            PlannedToolCall(
+                tool_name="search_reddit",
+                arguments={
+                    "query": f"{entity} discussion",
+                    "num_results": DEFAULT_NUM_RESULTS,
+                },
+                parallel_group=0,
+            )
+        )
     return calls
 
 
 def _plan_deep_dive(entities: list[str], time_range: str) -> list[PlannedToolCall]:
-    """Plan: per-entity calls (search_company_news or search_news) + broader context search.
+    """Plan: per-entity calls (search_company_news or search_news) + supplemental
+    web/reddit/scholar/github/quora calls + broader context search.
 
-    All calls run in parallel (group 0).
+    All calls run in parallel (group 0). Total capped at MAX_CALLS.
     """
     calls: list[PlannedToolCall] = []
     for entity in entities:
+        # Primary source: company news or topic news
         if _is_named_entity(entity):
             calls.append(
                 PlannedToolCall(
@@ -164,6 +201,65 @@ def _plan_deep_dive(entities: list[str], time_range: str) -> list[PlannedToolCal
                     parallel_group=0,
                 )
             )
+
+        # Web analysis for all entities
+        calls.append(
+            PlannedToolCall(
+                tool_name="search_web",
+                arguments={
+                    "query": f"{entity} analysis",
+                    "num_results": DEFAULT_NUM_RESULTS,
+                },
+                parallel_group=0,
+            )
+        )
+
+        # Reddit community signal for all entities
+        calls.append(
+            PlannedToolCall(
+                tool_name="search_reddit",
+                arguments={
+                    "query": entity,
+                    "num_results": DEFAULT_NUM_RESULTS,
+                },
+                parallel_group=0,
+            )
+        )
+
+        # Tech topics get academic/code perspective; non-tech get Q&A perspective
+        if _is_tech_topic(entity):
+            calls.append(
+                PlannedToolCall(
+                    tool_name="search_scholar",
+                    arguments={
+                        "query": entity,
+                        "num_results": DEFAULT_NUM_RESULTS,
+                    },
+                    parallel_group=0,
+                )
+            )
+            calls.append(
+                PlannedToolCall(
+                    tool_name="search_github",
+                    arguments={
+                        "query": entity,
+                        "num_results": DEFAULT_NUM_RESULTS,
+                    },
+                    parallel_group=0,
+                )
+            )
+        else:
+            calls.append(
+                PlannedToolCall(
+                    tool_name="search_quora",
+                    arguments={
+                        "query": entity,
+                        "num_results": DEFAULT_NUM_RESULTS,
+                    },
+                    parallel_group=0,
+                )
+            )
+
     # Broader context search across all entities combined
     if entities:
         calls.append(
@@ -177,13 +273,15 @@ def _plan_deep_dive(entities: list[str], time_range: str) -> list[PlannedToolCal
                 parallel_group=0,
             )
         )
-    return calls
+
+    # Cap total calls to avoid runaway API usage
+    return calls[:MAX_CALLS]
 
 
 def _plan_risk_scan(entities: list[str], time_range: str) -> list[PlannedToolCall]:
-    """Plan: per-entity risk-framed calls + broader risk search, all parallel (group 0).
+    """Plan: per-entity risk-framed calls + web/reddit risk calls + broader risk search.
 
-    Named entities use search_company_news with risk topics; topic phrases use search_news.
+    All calls run in parallel (group 0).
     """
     calls: list[PlannedToolCall] = []
     for entity in entities:
@@ -212,6 +310,31 @@ def _plan_risk_scan(entities: list[str], time_range: str) -> list[PlannedToolCal
                     parallel_group=0,
                 )
             )
+
+        # Web search for risk signals
+        calls.append(
+            PlannedToolCall(
+                tool_name="search_web",
+                arguments={
+                    "query": f"{entity} risk warning controversy",
+                    "num_results": DEFAULT_NUM_RESULTS,
+                },
+                parallel_group=0,
+            )
+        )
+
+        # Reddit community concerns
+        calls.append(
+            PlannedToolCall(
+                tool_name="search_reddit",
+                arguments={
+                    "query": f"{entity} problems concerns",
+                    "num_results": DEFAULT_NUM_RESULTS,
+                },
+                parallel_group=0,
+            )
+        )
+
     # Broader risk-oriented search across all entities
     if entities:
         calls.append(
@@ -229,7 +352,10 @@ def _plan_risk_scan(entities: list[str], time_range: str) -> list[PlannedToolCal
 
 
 def _plan_trend_watch(entities: list[str], time_range: str) -> list[PlannedToolCall]:
-    """Plan: broad trend-oriented search_news calls to surface emerging developments, all parallel (group 0)."""
+    """Plan: broad trend-oriented search_news calls plus video, reddit, and (for tech) github signals.
+
+    All calls run in parallel (group 0).
+    """
     calls: list[PlannedToolCall] = []
     if entities:
         # Trend landscape search
@@ -256,6 +382,44 @@ def _plan_trend_watch(entities: list[str], time_range: str) -> list[PlannedToolC
                 parallel_group=0,
             )
         )
+
+        # Video content for trend discovery
+        calls.append(
+            PlannedToolCall(
+                tool_name="search_videos",
+                arguments={
+                    "query": f"{' '.join(entities)} latest developments 2025",
+                    "num_results": DEFAULT_NUM_RESULTS,
+                },
+                parallel_group=0,
+            )
+        )
+
+        # Reddit community trend signal
+        calls.append(
+            PlannedToolCall(
+                tool_name="search_reddit",
+                arguments={
+                    "query": _build_trend_query(entities),
+                    "num_results": DEFAULT_NUM_RESULTS,
+                },
+                parallel_group=0,
+            )
+        )
+
+        # GitHub activity for tech topics
+        if any(_is_tech_topic(e) for e in entities):
+            calls.append(
+                PlannedToolCall(
+                    tool_name="search_github",
+                    arguments={
+                        "query": " ".join(entities),
+                        "num_results": DEFAULT_NUM_RESULTS,
+                    },
+                    parallel_group=0,
+                )
+            )
+
     return calls
 
 

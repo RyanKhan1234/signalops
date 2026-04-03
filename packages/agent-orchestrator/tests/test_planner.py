@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from src.agent.planner import plan_tool_calls, _count_groups, _is_named_entity
+from src.agent.planner import plan_tool_calls, _count_groups, _is_named_entity, _is_tech_topic, MAX_CALLS
 from src.models.digest import DetectedIntent, PlannedToolCall
 
 
@@ -44,6 +44,29 @@ class TestIsNamedEntity:
         assert _is_named_entity("Google DeepMind") is True
 
 
+class TestIsTechTopic:
+    """Tests for the _is_tech_topic heuristic."""
+
+    def test_ai_agents_is_tech(self) -> None:
+        assert _is_tech_topic("AI agents") is True
+
+    def test_llm_training_is_tech(self) -> None:
+        assert _is_tech_topic("LLM training") is True
+
+    def test_open_source_is_tech(self) -> None:
+        assert _is_tech_topic("open source software") is True
+
+    def test_sports_betting_is_not_tech(self) -> None:
+        assert _is_tech_topic("sports betting") is False
+
+    def test_company_name_is_not_tech(self) -> None:
+        # Named entities like "OpenAI" are companies, not classified as tech topics
+        assert _is_tech_topic("OpenAI") is False
+
+    def test_crypto_is_tech(self) -> None:
+        assert _is_tech_topic("crypto blockchain") is True
+
+
 class TestPlanToolCalls:
     """Tests for plan_tool_calls function."""
 
@@ -55,16 +78,22 @@ class TestPlanToolCalls:
     def test_latest_news_topic_phrase_uses_search_news(self) -> None:
         intent = make_intent(intent_type="latest_news", entities=["AI model releases"], time_range="1d")
         plan = plan_tool_calls(intent)
-        assert all(c.tool_name == "search_news" for c in plan.calls)
+        assert any(c.tool_name == "search_news" for c in plan.calls)
 
-    def test_latest_news_one_call_per_entity(self) -> None:
+    def test_latest_news_includes_reddit(self) -> None:
+        intent = make_intent(intent_type="latest_news", entities=["OpenAI"], time_range="1d")
+        plan = plan_tool_calls(intent)
+        assert any(c.tool_name == "search_reddit" for c in plan.calls)
+
+    def test_latest_news_two_calls_per_entity(self) -> None:
+        """Each entity produces a primary call + reddit call."""
         intent = make_intent(
             intent_type="latest_news",
             entities=["AI model releases", "LLM trends"],
             time_range="1d",
         )
         plan = plan_tool_calls(intent)
-        assert len(plan.calls) == 2
+        assert len(plan.calls) == 4  # 2 entities × 2 calls each
 
     def test_latest_news_named_entity_uses_company_param(self) -> None:
         intent = make_intent(intent_type="latest_news", entities=["OpenAI"], time_range="1d")
@@ -77,35 +106,90 @@ class TestPlanToolCalls:
         plan = plan_tool_calls(intent)
         tool_names = {c.tool_name for c in plan.calls}
         assert "search_company_news" in tool_names
-        assert "search_news" in tool_names
+        assert "search_web" in tool_names
+        assert "search_reddit" in tool_names
 
-    def test_deep_dive_topic_uses_only_search_news(self) -> None:
+    def test_deep_dive_topic_uses_search_news(self) -> None:
         intent = make_intent(intent_type="deep_dive", entities=["AI model releases"], time_range="7d")
         plan = plan_tool_calls(intent)
-        assert all(c.tool_name == "search_news" for c in plan.calls)
-        assert len(plan.calls) >= 2
+        assert any(c.tool_name == "search_news" for c in plan.calls)
 
-    def test_deep_dive_broader_search_uses_7d_range(self) -> None:
+    def test_deep_dive_topic_uses_multiple_tools(self) -> None:
+        intent = make_intent(intent_type="deep_dive", entities=["AI model releases"], time_range="7d")
+        plan = plan_tool_calls(intent)
+        assert len(plan.calls) >= 3
+
+    def test_deep_dive_broader_search_uses_time_range(self) -> None:
+        """Calls that accept time_range should propagate it."""
         intent = make_intent(intent_type="deep_dive", time_range="7d")
         plan = plan_tool_calls(intent)
-        assert all(c.arguments["time_range"] == "7d" for c in plan.calls)
+        time_range_calls = [c for c in plan.calls if "time_range" in c.arguments]
+        assert all(c.arguments["time_range"] == "7d" for c in time_range_calls)
+
+    def test_deep_dive_tech_topic_includes_scholar_and_github(self) -> None:
+        intent = make_intent(intent_type="deep_dive", entities=["AI agents"], time_range="7d")
+        plan = plan_tool_calls(intent)
+        tool_names = {c.tool_name for c in plan.calls}
+        assert "search_scholar" in tool_names
+        assert "search_github" in tool_names
+
+    def test_deep_dive_non_tech_topic_includes_quora(self) -> None:
+        intent = make_intent(intent_type="deep_dive", entities=["sports betting regulation"], time_range="7d")
+        plan = plan_tool_calls(intent)
+        tool_names = {c.tool_name for c in plan.calls}
+        assert "search_quora" in tool_names
+
+    def test_deep_dive_call_count_does_not_exceed_max(self) -> None:
+        intent = make_intent(
+            intent_type="deep_dive",
+            entities=["A", "B", "C", "D", "E"],
+            time_range="7d",
+        )
+        plan = plan_tool_calls(intent)
+        assert len(plan.calls) <= MAX_CALLS
+
+    def test_risk_scan_includes_news_call(self) -> None:
+        intent = make_intent(intent_type="risk_scan", time_range="7d")
+        plan = plan_tool_calls(intent)
+        assert any(c.tool_name in ("search_news", "search_company_news") for c in plan.calls)
+
+    def test_risk_scan_includes_web(self) -> None:
+        intent = make_intent(intent_type="risk_scan", time_range="7d")
+        plan = plan_tool_calls(intent)
+        assert any(c.tool_name == "search_web" for c in plan.calls)
+
+    def test_risk_scan_includes_reddit(self) -> None:
+        intent = make_intent(intent_type="risk_scan", time_range="7d")
+        plan = plan_tool_calls(intent)
+        assert any(c.tool_name == "search_reddit" for c in plan.calls)
 
     def test_risk_scan_query_includes_risk_framing(self) -> None:
         intent = make_intent(intent_type="risk_scan", time_range="7d")
         plan = plan_tool_calls(intent)
         risk_calls = [c for c in plan.calls if "risk" in str(c.arguments.get("query", "")).lower()
-                      or "controversy" in str(c.arguments.get("query", "")).lower()]
+                      or "controversy" in str(c.arguments.get("query", "")).lower()
+                      or "topics" in c.arguments]
         assert len(risk_calls) >= 1
-
-    def test_risk_scan_all_search_news(self) -> None:
-        intent = make_intent(intent_type="risk_scan", time_range="7d")
-        plan = plan_tool_calls(intent)
-        assert all(c.tool_name == "search_news" for c in plan.calls)
 
     def test_trend_watch_uses_search_news(self) -> None:
         intent = make_intent(intent_type="trend_watch", time_range="30d")
         plan = plan_tool_calls(intent)
-        assert all(c.tool_name == "search_news" for c in plan.calls)
+        assert any(c.tool_name == "search_news" for c in plan.calls)
+
+    def test_trend_watch_includes_videos(self) -> None:
+        intent = make_intent(intent_type="trend_watch", time_range="30d")
+        plan = plan_tool_calls(intent)
+        assert any(c.tool_name == "search_videos" for c in plan.calls)
+
+    def test_trend_watch_includes_reddit(self) -> None:
+        intent = make_intent(intent_type="trend_watch", time_range="30d")
+        plan = plan_tool_calls(intent)
+        assert any(c.tool_name == "search_reddit" for c in plan.calls)
+
+    def test_trend_watch_tech_topic_includes_github(self) -> None:
+        intent = make_intent(intent_type="trend_watch", entities=["AI agents"], time_range="30d")
+        plan = plan_tool_calls(intent)
+        assert any(c.tool_name == "search_github" for c in plan.calls)
 
     def test_trend_watch_wider_result_set(self) -> None:
         intent = make_intent(intent_type="trend_watch", time_range="30d")
@@ -129,18 +213,21 @@ class TestPlanToolCalls:
             entities=["A", "B", "C", "D", "E", "F", "G"],
         )
         plan = plan_tool_calls(intent)
-        # For latest_news, one call per entity, capped at 5
-        assert len(plan.calls) <= 5
+        # 5 entities × 2 calls each (primary + reddit) = 10 max
+        assert len(plan.calls) <= 10
 
     def test_plan_preserves_intent(self) -> None:
         intent = make_intent()
         plan = plan_tool_calls(intent)
         assert plan.intent == intent
 
-    def test_time_range_propagated_to_calls(self) -> None:
+    def test_time_range_propagated_to_news_calls(self) -> None:
+        """time_range should be on all calls that accept it (news/company_news)."""
         intent = make_intent(time_range="7d")
         plan = plan_tool_calls(intent)
-        for call in plan.calls:
+        time_range_calls = [c for c in plan.calls if "time_range" in c.arguments]
+        assert len(time_range_calls) >= 1
+        for call in time_range_calls:
             assert call.arguments.get("time_range") == "7d"
 
     def test_empty_entities_produces_no_calls_for_trend_watch(self) -> None:

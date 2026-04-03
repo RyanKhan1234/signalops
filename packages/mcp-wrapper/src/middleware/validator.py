@@ -271,3 +271,149 @@ def validate_get_article_metadata_inputs(
     if check is not None:
         errors.append(check)
     return errors
+
+
+def validate_search_web_inputs(
+    query: str | None,
+    num_results: int | None = None,
+) -> list[ValidationError]:
+    """Validate all inputs for the ``search_web`` tool."""
+    errors: list[ValidationError] = []
+    for check in (
+        validate_query(query),
+        validate_num_results(num_results),
+    ):
+        if check is not None:
+            errors.append(check)
+    return errors
+
+
+def validate_search_scholar_inputs(
+    query: str | None,
+    num_results: int | None = None,
+) -> list[ValidationError]:
+    """Validate all inputs for the ``search_scholar`` tool."""
+    errors: list[ValidationError] = []
+    for check in (
+        validate_query(query),
+        validate_num_results(num_results),
+    ):
+        if check is not None:
+            errors.append(check)
+    return errors
+
+
+def validate_search_finance_inputs(
+    query: str | None,
+) -> list[ValidationError]:
+    """Validate all inputs for the ``search_finance`` tool."""
+    errors: list[ValidationError] = []
+    check = validate_query(query)
+    if check is not None:
+        errors.append(check)
+    return errors
+
+
+def validate_search_videos_inputs(
+    query: str | None,
+    num_results: int | None = None,
+) -> list[ValidationError]:
+    """Validate all inputs for the ``search_videos`` tool."""
+    errors: list[ValidationError] = []
+    for check in (
+        validate_query(query),
+        validate_num_results(num_results),
+    ):
+        if check is not None:
+            errors.append(check)
+    return errors
+
+
+def validate_search_github_inputs(
+    query: str | None,
+    num_results: int | None = None,
+) -> list[ValidationError]:
+    """Validate all inputs for the ``search_github`` tool."""
+    errors: list[ValidationError] = []
+    for check in (
+        validate_query(query),
+        validate_num_results(num_results),
+    ):
+        if check is not None:
+            errors.append(check)
+    return errors
+
+
+_SUBREDDIT_PATTERN = re.compile(r"[<>{}\x00/\s]")
+MAX_SUBREDDIT_LENGTH: int = 50
+
+
+def validate_subreddit(subreddit: str | None) -> ValidationError | None:
+    """Validate the optional ``subreddit`` parameter for ``search_reddit``."""
+    if subreddit is None:
+        return None  # Optional.
+    if not subreddit.strip():
+        return ValidationError(
+            message="The 'subreddit' field must not be empty when provided.",
+            field="subreddit",
+            constraint="non_empty",
+        )
+    if len(subreddit) > MAX_SUBREDDIT_LENGTH:
+        return ValidationError(
+            message=(
+                f"The 'subreddit' field must be at most {MAX_SUBREDDIT_LENGTH} "
+                f"characters; got {len(subreddit)}."
+            ),
+            field="subreddit",
+            constraint=f"max_length:{MAX_SUBREDDIT_LENGTH}",
+        )
+    if _SUBREDDIT_PATTERN.search(subreddit):
+        return ValidationError(
+            message="The 'subreddit' field contains disallowed characters.",
+            field="subreddit",
+            constraint="no_injection_chars",
+        )
+    return None
+
+
+def validate_search_reddit_inputs(
+    query: str | None,
+    subreddit: str | None = None,
+    num_results: int | None = None,
+) -> list[ValidationError]:
+    """Validate all inputs for the ``search_reddit`` tool."""
+    errors: list[ValidationError] = []
+    for check in (
+        validate_query(query),
+        validate_subreddit(subreddit),
+        validate_num_results(num_results),
+    ):
+        if check is not None:
+            errors.append(check)
+    return errors
+
+
+def validate_search_quora_inputs(
+    query: str | None,
+    num_results: int | None = None,
+) -> list[ValidationError]:
+    """Validate all inputs for the ``search_quora`` tool."""
+    errors: list[ValidationError] = []
+    for check in (
+        validate_query(query),
+        validate_num_results(num_results),
+    ):
+        if check is not None:
+            errors.append(check)
+    return errors
+
+
+def validate_fetch_page_inputs(
+    url: str | None,
+) -> list[ValidationError]:
+    """Validate all inputs for the ``fetch_page`` tool."""
+    errors: list[ValidationError] = []
+    check = validate_url(url)
+    if check is not None:
+        errors.append(check)
+    return errors
