@@ -151,6 +151,42 @@ export const MOCK_DIGEST_RESPONSE: DigestResponse = {
   ],
   tool_trace: [
     {
+      tool_name: 'search_company_news',
+      input: {
+        company: 'Google DeepMind',
+        time_range: '7d',
+        num_results: 10,
+      },
+      output_summary:
+        'Returned 8 articles about Google DeepMind. Top story: Gemini 2.0 Flash launch with improved reasoning benchmarks and lower pricing tier.',
+      latency_ms: 843,
+      timestamp: '2026-03-01T11:59:44Z',
+    },
+    {
+      tool_name: 'search_company_news',
+      input: {
+        company: 'Anthropic',
+        time_range: '7d',
+        num_results: 10,
+      },
+      output_summary:
+        'Returned 6 articles about Anthropic. Top story: Updated model card for Claude 3.5 Sonnet covering safety evaluations and agentic use guidance.',
+      latency_ms: 791,
+      timestamp: '2026-03-01T11:59:44Z',
+    },
+    {
+      tool_name: 'search_company_news',
+      input: {
+        company: 'OpenAI',
+        time_range: '7d',
+        num_results: 10,
+      },
+      output_summary:
+        'Returned 9 articles about OpenAI. Top story: Silent GPT-4o update improving instruction-following noted by developers before official announcement.',
+      latency_ms: 912,
+      timestamp: '2026-03-01T11:59:45Z',
+    },
+    {
       tool_name: 'search_news',
       input: {
         query: 'AI model releases this week',
@@ -158,19 +194,19 @@ export const MOCK_DIGEST_RESPONSE: DigestResponse = {
         num_results: 10,
       },
       output_summary:
-        'Returned 10 articles covering recent AI model releases. Top topics: Gemini 2.0 Flash (3 articles), Llama 3.2 vision (3 articles), Mistral Small 3 (2 articles), GPT-4o update (2 articles).',
+        'Returned 10 articles covering broader AI model landscape. Highlights: Meta Llama 3.2 vision release, Mistral Small 3 local deployment benchmark results.',
       latency_ms: 1121,
-      timestamp: '2026-03-01T11:59:45Z',
+      timestamp: '2026-03-01T11:59:46Z',
     },
     {
       tool_name: 'search_news',
       input: {
-        query: '"AI models" OR "LLMs" OR "foundation models" analysis update development',
+        query: '"Google DeepMind" OR "Anthropic" OR "OpenAI" analysis update development',
         time_range: '7d',
         num_results: 10,
       },
       output_summary:
-        'Returned 10 articles on broader AI model landscape. 5 overlapped with first search; 5 new articles added including Anthropic model card and benchmark analysis pieces.',
+        'Returned 10 articles on broader AI lab activity. 4 overlapped with company searches; 6 new articles added including open-weight model comparisons and benchmark analysis.',
       latency_ms: 934,
       timestamp: '2026-03-01T11:59:47Z',
     },
